@@ -542,6 +542,11 @@ print(squared_evens) # Output: [4, 16]`,
   }
 };
 
+export function getPersonaGreeting(personaId) {
+  const pData = RESPONSES[personaId] || RESPONSES.silas;
+  return pData.greetings[0];
+}
+
 /**
  * Simulates streaming AI response chunk-by-chunk.
  */
@@ -683,11 +688,26 @@ export function streamAiResponse(personaId, userPrompt, onChunk, onComplete) {
                             promptLower.includes('explain') || 
                             promptLower.includes('meaning of');
 
-  if (personaId === 'athena') {
-    if (isDefinitionQuery) {
-      // Conceptual response format (omitting rigid codeblock template)
-      const cleanText = responseText.replace(/### Code Snippet\n```[\s\S]*?```/g, '').trim();
-      responseText = `### Technical Concept: "${cleanPrompt}"
+  const isSimpleQuery = 
+    isMathExpr ||
+    promptLower.includes('who are you') || 
+    promptLower.includes('your name') || 
+    promptLower.includes('role') ||
+    promptLower.includes('can you') || 
+    promptLower.includes('capable of') || 
+    promptLower.includes('what can you do') || 
+    promptLower.includes('help me with') ||
+    promptLower.includes('hello') || 
+    promptLower.includes('hi ') || 
+    promptLower.includes('hey') || 
+    promptLower.includes('greetings');
+
+  if (!isSimpleQuery) {
+    if (personaId === 'athena') {
+      if (isDefinitionQuery) {
+        // Conceptual response format (omitting rigid codeblock template)
+        const cleanText = responseText.replace(/### Code Snippet\n```[\s\S]*?```/g, '').trim();
+        responseText = `### Technical Concept: "${cleanPrompt}"
 
 ${cleanText}
 
@@ -700,19 +720,19 @@ Next Steps:
 1. Verify system scaling and latency requirements.
 2. Ask for code blocks specifically if you are ready to implement this concept.
 3. Review associated architectural patterns.`;
-    } else {
-      // Extract code block if present
-      let codeBlock = '';
-      let textContent = responseText;
-      const match = responseText.match(/```(?:javascript|css|sql|json)?\n([\s\S]*?)```/);
-      if (match) {
-        codeBlock = match[1];
-        textContent = responseText.replace(/```(?:javascript|css|sql|json)?\n[\s\S]*?```/g, '').trim();
       } else {
-        codeBlock = `// Solution for ${cleanPrompt}\nfunction resolveRequest() {\n  // Implement logic safely\n  try {\n    return true;\n  } catch (error) {\n    console.error("Architect Exception:", error);\n    throw error;\n  }\n}`;
-      }
-      
-      responseText = `### Problem
+        // Extract code block if present
+        let codeBlock = '';
+        let textContent = responseText;
+        const match = responseText.match(/```(?:javascript|css|sql|json)?\n([\s\S]*?)```/);
+        if (match) {
+          codeBlock = match[1];
+          textContent = responseText.replace(/```(?:javascript|css|sql|json)?\n[\s\S]*?```/g, '').trim();
+        } else {
+          codeBlock = `// Solution for ${cleanPrompt}\nfunction resolveRequest() {\n  // Implement logic safely\n  try {\n    return true;\n  } catch (error) {\n    console.error("Architect Exception:", error);\n    throw error;\n  }\n}`;
+        }
+        
+        responseText = `### Problem
 Need to resolve technical requirement: "${cleanPrompt}".
 
 ### Approach
@@ -732,20 +752,21 @@ Next Steps:
 1. Integrate the script into your project.
 2. Run standard suite of unit tests.
 3. Validate API boundary limits in staging environment.`;
+      }
     }
-  }
-  else if (personaId === 'aurora') {
-    const evocativeOpenings = [
-      "*A sudden light parts the grey clouds, revealing paths we have yet to travel.*",
-      "*In the quiet spaces between heartbeats, a story begins to write itself.*",
-      "*The smell of damp ink and ancient paper fills the air, urging us to create.*"
-    ];
-    const opening = evocativeOpenings[Math.floor(Math.random() * evocativeOpenings.length)];
-    
-    responseText = `${opening}\n\n${responseText}\n\n---\n**Director's Note:**\nThis piece utilizes character motivation, sensory detail, and contrast to evoke a feeling of connection and discovery. It preserves your voice while extending the narrative arc. Let me know if you would like to adapt it to a different mood or structure.`;
-  }
-  else if (personaId === 'silas') {
-    responseText = `Let us pause, clear the workspace, and look at this moment with quiet clarity.\n\nIt sounds like you are navigating a situation involving "${cleanPrompt}".\n\n**What outcome matters most to you here?**\n\nWhen we feel overwhelmed, it is helpful to return to the breath. Observe what you can control — your immediate action and your focus. Let go of the noise outside.\n\n---\n**One thing to sit with:**\nIf you were to take the smallest possible action right now, what would it be? Let that action guide your steps.`;
+    else if (personaId === 'aurora') {
+      const evocativeOpenings = [
+        "*A sudden light parts the grey clouds, revealing paths we have yet to travel.*",
+        "*In the quiet spaces between heartbeats, a story begins to write itself.*",
+        "*The smell of damp ink and ancient paper fills the air, urging us to create.*"
+      ];
+      const opening = evocativeOpenings[Math.floor(Math.random() * evocativeOpenings.length)];
+      
+      responseText = `${opening}\n\n${responseText}\n\n---\n**Director's Note:**\nThis piece utilizes character motivation, sensory detail, and contrast to evoke a feeling of connection and discovery. It preserves your voice while extending the narrative arc. Let me know if you would like to adapt it to a different mood or structure.`;
+    }
+    else if (personaId === 'silas') {
+      responseText = `Let us pause, clear the workspace, and look at this moment with quiet clarity.\n\nIt sounds like you are navigating a situation involving "${cleanPrompt}".\n\n${responseText}\n\n**What outcome matters most to you here?**\n\nWhen we feel overwhelmed, it is helpful to return to the breath. Observe what you can control — your immediate action and your focus. Let go of the noise outside.\n\n---\n**One thing to sit with:**\nIf you were to take the smallest possible action right now, what would it be? Let that action guide your steps.`;
+    }
   }
 
   // Simulate typing by splitting text into words and feeding them gradually
