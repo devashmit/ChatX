@@ -76,36 +76,372 @@ const RESPONSES = {
   }
 };
 
+// Comprehensive IT & Software Engineering Knowledge Base
+const IT_DATABASE = {
+  closure: {
+    title: "JavaScript Closures",
+    desc: "A closure is the combination of a function bundled together (enclosed) with references to its surrounding state (the lexical environment). In other words, a closure gives an inner function access to the outer function's scope even after the outer function has returned.",
+    code: `function createCounter() {
+  let count = 0; // Lexical state
+  return {
+    increment: () => ++count,
+    decrement: () => --count,
+    getCount: () => count
+  };
+}
+
+const counter = createCounter();
+console.log(counter.increment()); // 1
+console.log(counter.increment()); // 2
+console.log(counter.getCount());  // 2`,
+    points: [
+      "**Lexical Scoping**: Inner functions maintain references to variables in parent scopes.",
+      "**State Encapsulation**: Useful for creating private variables that cannot be modified directly from the outside.",
+      "**Memory Management**: Since variables remain in memory as long as the closure exists, be mindful of potential memory leaks."
+    ]
+  },
+  recursion: {
+    title: "Recursion in Programming",
+    desc: "Recursion is a programming technique where a function calls itself directly or indirectly to solve a problem by breaking it down into smaller sub-problems.",
+    code: `// Classic Fibonacci recursion with memoization
+function fibonacci(n, memo = {}) {
+  if (n <= 1) return n; // Base case
+  if (memo[n]) return memo[n]; // Return cached value
+  
+  // Recursive case
+  memo[n] = fibonacci(n - 1, memo) + fibonacci(n - 2, memo);
+  return memo[n];
+}
+
+console.log(fibonacci(10)); // 55`,
+    points: [
+      "**Base Case**: The stopping condition that prevents infinite recursion and stack overflow errors.",
+      "**Recursive Step**: The part where the function calls itself with a modified (usually smaller) argument.",
+      "**Call Stack**: Each recursive call adds a frame to the call stack. Deep recursion can trigger 'Maximum call stack size exceeded'."
+    ]
+  },
+  hook: {
+    title: "Custom React Hook for Data Fetching",
+    desc: "Custom hooks let you share stateful logic between components without duplicating code. Here is a robust hook that handles loading states, data retrieval, and error catching.",
+    code: `import { useState, useEffect } from 'react';
+
+export function useFetch(url) {
+  const [data, setData] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    let isMounted = true;
+    const fetchData = async () => {
+      setLoading(true);
+      try {
+        const res = await fetch(url);
+        if (!res.ok) throw new Error('Network response error');
+        const json = await res.json();
+        if (isMounted) setData(json);
+      } catch (err) {
+        if (isMounted) setError(err.message);
+      } finally {
+        if (isMounted) setLoading(false);
+      }
+    };
+
+    fetchData();
+    return () => { isMounted = false; }; // Cleanup on unmount
+  }, [url]);
+
+  return { data, loading, error };
+}`,
+    points: [
+      "**State Separation**: Keeps fetch, loading, and error states encapsulated.",
+      "**Race Condition Guard**: The `isMounted` flag prevents updating state on unmounted components.",
+      "**Dependency Array**: Re-runs the effect whenever the URL changes."
+    ]
+  },
+  react: {
+    title: "React Component Lifecycle & Hooks",
+    desc: "React uses functional components with Hooks to manage state, side-effects, and DOM rendering efficiently.",
+    code: `import React, { useState } from 'react';
+
+export function Counter() {
+  const [count, setCount] = useState(0);
+
+  return (
+    <div className="counter">
+      <p>Count: {count}</p>
+      <button onClick={() => setCount(count + 1)}>Increment</button>
+    </div>
+  );
+}`,
+    points: [
+      "**Virtual DOM**: React keeps a lightweight representation of the UI in memory to sync with the real DOM via reconciliation.",
+      "**State vs Props**: State is private and fully controlled by the component, whereas props are read-only variables passed from parents.",
+      "**Functional Rendering**: Components re-render whenever their state or props change."
+    ]
+  },
+  database: {
+    title: "Database Optimization & Indexes",
+    desc: "Optimizing database queries is essential for application performance. Indexes speed up data retrieval at the cost of additional write overhead and storage space.",
+    code: `-- Creating an index for faster search on email queries
+CREATE INDEX idx_users_email ON users(email);
+
+-- Query using index
+SELECT id, username, email 
+FROM users 
+WHERE email = 'developer@chatx.ai';`,
+    points: [
+      "**B-Tree Indexes**: Default indexes useful for equality and range queries (e.g. `<`, `>`, `=`).",
+      "**Write Overhead**: Every insert, update, or delete query requires updating the index, which can slow down write operations.",
+      "**Execution Plan**: Use `EXPLAIN` or `EXPLAIN ANALYZE` to check if your queries are scanning tables or utilizing indexes properly."
+    ]
+  },
+  sql: {
+    title: "SQL Joins & Data Retrieval",
+    desc: "SQL joins combine rows from two or more tables based on a related column between them.",
+    code: `-- Join users and orders to get customer order details
+SELECT users.id, users.username, orders.order_date, orders.total_amount
+FROM users
+INNER JOIN orders ON users.id = orders.user_id
+WHERE orders.status = 'completed'
+ORDER BY orders.total_amount DESC;`,
+    points: [
+      "**Inner Join**: Returns records that have matching values in both tables.",
+      "**Left (Outer) Join**: Returns all records from the left table, and matching records from the right table.",
+      "**Performance Tip**: Ensure join columns are indexed to optimize speed on large datasets."
+    ]
+  },
+  docker: {
+    title: "Docker Containerization",
+    desc: "Docker packages an application and its dependencies into a lightweight, portable container that can run consistently across different environments.",
+    code: `# Multi-stage Build Dockerfile for Node.js
+FROM node:20-alpine AS builder
+WORKDIR /app
+COPY package*.json ./
+RUN npm ci
+COPY . .
+RUN npm run build
+
+FROM node:20-alpine AS runner
+WORKDIR /app
+COPY --from=builder /app/dist ./dist
+COPY --from=builder /app/package*.json ./
+RUN npm ci --only=production
+EXPOSE 3000
+CMD ["npm", "run", "start"]`,
+    points: [
+      "**Image Layers**: Each directive (e.g. `RUN`, `COPY`) creates a cached layer. Place rarely changing layers higher.",
+      "**Multi-stage Builds**: Used to separate building tools from runner requirements, keeping final image sizes minimal.",
+      "**State Isolation**: Containers should be stateless. Store persistent files using volumes."
+    ]
+  },
+  git: {
+    title: "Git Version Control Workflow",
+    desc: "Git is a distributed version control system that enables team collaboration, branch management, and release tracking.",
+    code: `# Create and switch to a new branch
+git checkout -b feature/user-auth
+
+# Stage, commit changes
+git add .
+git commit -m "feat: implement JWT token authentication"
+
+# Push to origin
+git push origin feature/user-auth`,
+    points: [
+      "**Commit Guidelines**: Write clear, imperative commit messages (e.g. 'feat: add button' instead of 'changed code').",
+      "**Rebase vs Merge**: Rebasing rewrites history for a cleaner line, while merging preserves the chronological record.",
+      "**Conflicts**: Occur when changes clash on the same lines. Resolve manually, stage, and complete the merge."
+    ]
+  },
+  api: {
+    title: "REST APIs & Fetching Data",
+    desc: "REST APIs organize endpoints around resources using standard HTTP methods like GET, POST, PUT, and DELETE.",
+    code: `// Making a POST request using the Fetch API
+async function createPost(title, body) {
+  const response = await fetch('https://jsonplaceholder.typicode.com/posts', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ title, body, userId: 1 })
+  });
+  
+  if (!response.ok) throw new Error('API Error');
+  return await response.json();
+}
+
+createPost('Hello ChatX', 'Content details here...').then(console.log);`,
+    points: [
+      "**HTTP Status Codes**: 2xx (Success), 3xx (Redirection), 4xx (Client Error), 5xx (Server Error).",
+      "**JSON Format**: The standard payload format for modern REST communication.",
+      "**CORS**: Cross-Origin Resource Sharing must be configured on the server to allow frontend client requests."
+    ]
+  }
+};
+
 /**
  * Simulates streaming AI response chunk-by-chunk.
  */
 export function streamAiResponse(personaId, userPrompt, onChunk, onComplete) {
   const pData = RESPONSES[personaId] || RESPONSES.silas;
-  const promptLower = userPrompt.toLowerCase();
+  const promptLower = userPrompt.toLowerCase().trim();
   
   let responseText = "";
   
-  // Basic Keyword Routing
-  if (promptLower.includes('hello') || promptLower.includes('hi ') || promptLower.includes('hey')) {
-    responseText = pData.greetings[Math.floor(Math.random() * pData.greetings.length)];
-  } else {
-    // Check keyword lists
-    if (personaId === 'athena') {
-      const match = RESPONSES.athena.codeKeywords.some(kw => promptLower.includes(kw));
-      responseText = match ? RESPONSES.athena.default[0] : RESPONSES.athena.default[1];
-    } else if (personaId === 'aurora') {
-      const match = RESPONSES.aurora.creativeKeywords.some(kw => promptLower.includes(kw));
-      responseText = match ? RESPONSES.aurora.default[0] : RESPONSES.aurora.default[1];
-    } else {
-      const match = RESPONSES.silas.mindfulnessKeywords.some(kw => promptLower.includes(kw));
-      responseText = match ? RESPONSES.silas.default[0] : RESPONSES.silas.default[1];
+  // 1. Math solving capability (supporting complex mathematical formulas)
+  const mathClean = promptLower.replace(/[a-z?]/g, '').trim();
+  const isMathExpr = /^[0-9+\-*/().\s]+$/.test(mathClean) && /[0-9]/.test(mathClean) && /[\+\-\*\/]/.test(mathClean);
+  
+  if (isMathExpr) {
+    try {
+      // Safe math evaluation
+      const result = Function(`"use strict"; return (${mathClean})`)();
+      if (typeof result === 'number' && !isNaN(result)) {
+        responseText = `I've solved the math problem for you:\n\n**Expression**: \`${mathClean}\`\n**Result**: \`${result}\``;
+      }
+    } catch (e) {
+      // ignore and fall through to standard responder
     }
   }
 
-  // Fallback for custom persona questions
-  if (promptLower.includes('who are you') || promptLower.includes('your name') || promptLower.includes('role')) {
-    const persona = PERSONAS.find(p => p.id === personaId);
-    responseText = `I am ${persona.name}, your ${persona.role}. ${persona.bio}`;
+  if (!responseText) {
+    // 2. Identity and Capabilities
+    if (promptLower.includes('who are you') || promptLower.includes('your name') || promptLower.includes('role')) {
+      const persona = PERSONAS.find(p => p.id === personaId);
+      responseText = `I am ${persona.name}, your ${persona.role}. ${persona.bio}`;
+    } 
+    else if (promptLower.includes('can you') || promptLower.includes('capable of') || promptLower.includes('what can you do') || promptLower.includes('help me with')) {
+      if (personaId === 'athena') {
+        responseText = "Yes, I am fully capable of helping you! I specialize in software engineering, systems architecture, and programming. I can write clean code, explain complex concepts (like closures, async operations), debug errors, and optimize database queries.";
+      } else if (personaId === 'aurora') {
+        responseText = "Yes! I can help you with a wide range of creative tasks. I specialize in storytelling, poetry, brainstorming creative names, designing concepts, and generating artistic ideas.";
+      } else {
+        responseText = "Yes, I am here to help you. I specialize in mentorship, mindfulness, and calm guidance. I can walk you through burnout management, suggest breathing exercises, and discuss habits for resilience.";
+      }
+    }
+    // 3. IT & Programming Database Lookup
+    else {
+      const itKey = Object.keys(IT_DATABASE).find(key => promptLower.includes(key));
+      if (itKey) {
+        const item = IT_DATABASE[itKey];
+        responseText = `### ${item.title}\n\n${item.desc}\n\n### Code Snippet\n\`\`\`javascript\n${item.code}\n\`\`\`\n\n### Key Concepts:\n${item.points.map(p => `- ${p}`).join('\n')}`;
+      }
+      // 4. Common Programming bug/error response
+      else if (promptLower.includes('bug') || promptLower.includes('error') || promptLower.includes('debug') || promptLower.includes('broken')) {
+        responseText = `When dealing with bugs and execution errors, follow these basic steps to isolate the issue:\n\n1. **Inspect the stack trace**: Find the exact file and line number where the runtime failed.\n2. **Check states**: Ensure arguments are not \`null\`, \`undefined\`, or mismatching types.\n3. **Use logging**: Print states using \`console.log\` or utilize browser debugger breakpoints.\n\nIf you provide your specific code snippet or error message, I can help you fix it!`;
+      }
+      // 5. Dynamic Concept Explainer
+      else {
+        const conceptMatch = promptLower.match(/(?:what is|what are|explain|how does|how to)\s+(?:a|an|the)?\s*([a-z0-9\s]{3,})/);
+        if (conceptMatch) {
+          const subject = conceptMatch[1].trim();
+          if (personaId === 'athena') {
+            responseText = `Let's break down **${subject}** from an engineering perspective:\n\n1. **Core Concept**: ${subject} acts as a key component in modern system architecture.\n2. **System Role**: It manages resource handling, data flow, and processing limits.\n3. **Best Practice**: In production, always ensure safety, error boundaries, and clear abstraction when implementing ${subject}.\n\nLet me know if you would like me to write a sample integration or API mock for ${subject}!`;
+          } else if (personaId === 'aurora') {
+            responseText = `Ah, exploring the essence of **${subject}**! Think of ${subject} as a canvas waiting for a story. It represents a focal point where structure meets raw creativity. In a wider narrative, ${subject} could symbolize discovery, transition, or the mystery of how complex systems interact.\n\nWould you like me to write a short story, creative metaphor, or poem centered around ${subject}?`;
+          } else {
+            responseText = `Let's look at **${subject}** with patience and clear focus. Often, understanding ${subject} is about simplifying the noise and finding the core principle. Approach ${subject} without rushing, noting how each piece fits into the larger picture.\n\nWe can explore the concepts step-by-step. Let me know what specific questions you have about ${subject}.`;
+          }
+        }
+        // 6. Generic IT/Programming term matches
+        else {
+          const techTerms = ['python', 'java', 'c++', 'rust', 'html', 'css', 'http', 'server', 'network', 'port', 'web', 'compil', 'framework', 'variable', 'interface', 'inheritance', 'polymorphism', 'binary', 'tree', 'linked list', 'complexity', 'big o'];
+          const matchedTerm = techTerms.find(t => promptLower.includes(t));
+          
+          if (matchedTerm) {
+            responseText = `Let's discuss **${matchedTerm}** in software development:\n\n1. **Purpose**: ${matchedTerm} plays a vital role in organizing logic, managing computational flow, and establishing clean structures.\n2. **Common Patterns**: Using modular abstraction, separating concerns, and validating boundaries are key patterns associated with ${matchedTerm}.\n3. **Implementation**: Ensure correct environment setup and standard formatting rules when writing solutions involving ${matchedTerm}.\n\nLet me know if you would like me to write a sample script or explain a specific configuration for ${matchedTerm}!`;
+          }
+          // 7. Greetings
+          else if (promptLower.includes('hello') || promptLower.includes('hi ') || promptLower.includes('hey') || promptLower.includes('greetings')) {
+            responseText = pData.greetings[Math.floor(Math.random() * pData.greetings.length)];
+          } 
+          // 8. Keyword matches for standard defaults
+          else if (personaId === 'athena' && RESPONSES.athena.codeKeywords.some(kw => promptLower.includes(kw))) {
+            responseText = RESPONSES.athena.default[Math.floor(Math.random() * RESPONSES.athena.default.length)];
+          } 
+          else if (personaId === 'aurora' && RESPONSES.aurora.creativeKeywords.some(kw => promptLower.includes(kw))) {
+            responseText = RESPONSES.aurora.default[Math.floor(Math.random() * RESPONSES.aurora.default.length)];
+          } 
+          else if (personaId === 'silas' && RESPONSES.silas.mindfulnessKeywords.some(kw => promptLower.includes(kw))) {
+            responseText = RESPONSES.silas.default[Math.floor(Math.random() * RESPONSES.silas.default.length)];
+          }
+          // 9. Multi-template intelligent fallbacks to avoid repeating
+          else {
+            const cleanPrompt = userPrompt.length > 50 ? userPrompt.substring(0, 47) + '...' : userPrompt;
+            const index = Math.floor(Math.random() * 3);
+            
+            if (personaId === 'athena') {
+              const templates = [
+                `I've analyzed your query regarding "${cleanPrompt}". From a software design perspective, we would tackle this by isolating the core requirements, selecting the appropriate data structure, and ensuring optimized algorithms.\n\nDo you want me to write code to demonstrate this?`,
+                `Regarding "${cleanPrompt}", this looks like a classic implementation scenario. We'll want to review the inputs, minimize complexity overhead, and establish robust handling.\n\nLet me know if you would like me to design a system flow diagram or trace an example execution.`,
+                `Interesting. The challenge with "${cleanPrompt}" lies in scale and concurrency. We must ensure thread safety, state isolation, and clean APIs.\n\nI can write a code sample or test outline for this if you'd like.`
+              ];
+              responseText = templates[index];
+            } else if (personaId === 'aurora') {
+              const templates = [
+                `A fascinating prompt! The idea of "${cleanPrompt}" opens up a wide landscape of creative possibilities. We could look at this as a metaphor for change or a spark for a larger narrative journey.\n\nWould you like me to brainstorm concepts or draft a character profile for this?`,
+                `Thinking about "${cleanPrompt}" brings to mind a picture of light and shadow—a story of discovery. If we were to build a creative project around it, we could highlight the contrast between expectation and reality.\n\nLet's brainstorm some title options or write a brief introduction scene!`,
+                `"${cleanPrompt}" has a poetic quality to it. It makes me think of paths crossing and worlds aligning. Let let me know if you want a short prose piece, an elegant poem, or a list of creative concepts!`
+              ];
+              responseText = templates[index];
+            } else {
+              const templates = [
+                `Thank you for sharing your thoughts on "${cleanPrompt}". When navigating these ideas, it's beneficial to take a step back, observe the situation calmly, and recognize what is within your sphere of influence.\n\nLet's unpack this slowly together.`,
+                `Reflecting on "${cleanPrompt}", I encourage you to pause and take a slow, deep breath. Clarity comes when we quiet the noise around us and focus on the immediate next step.\n\nHow does this situation make you feel? Let's talk about it.`,
+                `The topic of "${cleanPrompt}" is worth reflecting upon. Often, simple daily habits and conscious pauses can help us build the resilience needed to face these challenges.\n\nI am here to listen. Let me know how you would like to proceed.`
+              ];
+              responseText = templates[index];
+            }
+          }
+        }
+      }
+    }
+  }
+
+  // 10. Format according to specific Persona System Instructions
+  const cleanPrompt = userPrompt.length > 50 ? userPrompt.substring(0, 47) + '...' : userPrompt;
+  if (personaId === 'athena') {
+    // Extract code block if present
+    let codeBlock = '';
+    let textContent = responseText;
+    const match = responseText.match(/```(?:javascript|css|sql|json)?\n([\s\S]*?)```/);
+    if (match) {
+      codeBlock = match[1];
+      textContent = responseText.replace(/```(?:javascript|css|sql|json)?\n[\s\S]*?```/g, '').trim();
+    } else {
+      codeBlock = `// Solution for ${cleanPrompt}\nfunction resolveRequest() {\n  // Implement logic safely\n  try {\n    return true;\n  } catch (error) {\n    console.error("Architect Exception:", error);\n    throw error;\n  }\n}`;
+    }
+    
+    responseText = `### Problem
+Need to resolve technical requirement: "${cleanPrompt}".
+
+### Approach
+Analyze requirements, handle edge cases, and design a simple, maintainable structure using standard patterns.
+
+### Code
+\`\`\`javascript (solution.js)
+${codeBlock}
+\`\`\`
+
+### Explanation
+- **Robust Logic**: Code isolation handles operations within standard bounds.
+- **Safety**: Built-in error handling guards execution scopes.
+- **Modularity**: Components remain reusable and easy to test.
+
+Next Steps:
+1. Integrate the script into your project.
+2. Run standard suite of unit tests.
+3. Validate API boundary limits in staging environment.`;
+  }
+  else if (personaId === 'aurora') {
+    const evocativeOpenings = [
+      "*A sudden light parts the grey clouds, revealing paths we have yet to travel.*",
+      "*In the quiet spaces between heartbeats, a story begins to write itself.*",
+      "*The smell of damp ink and ancient paper fills the air, urging us to create.*"
+    ];
+    const opening = evocativeOpenings[Math.floor(Math.random() * evocativeOpenings.length)];
+    
+    responseText = `${opening}\n\n${responseText}\n\n---\n**Director's Note:**\nThis piece utilizes character motivation, sensory detail, and contrast to evoke a feeling of connection and discovery. It preserves your voice while extending the narrative arc. Let me know if you would like to adapt it to a different mood or structure.`;
+  }
+  else if (personaId === 'silas') {
+    responseText = `Let us pause, clear the workspace, and look at this moment with quiet clarity.\n\nIt sounds like you are navigating a situation involving "${cleanPrompt}".\n\n**What outcome matters most to you here?**\n\nWhen we feel overwhelmed, it is helpful to return to the breath. Observe what you can control — your immediate action and your focus. Let go of the noise outside.\n\n---\n**One thing to sit with:**\nIf you were to take the smallest possible action right now, what would it be? Let that action guide your steps.`;
   }
 
   // Simulate typing by splitting text into words and feeding them gradually
