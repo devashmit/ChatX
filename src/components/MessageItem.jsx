@@ -1,6 +1,12 @@
 import React, { useState } from 'react';
-import { Copy, Check } from 'lucide-react';
+import { Copy, Check, User, Terminal, Sparkles, Compass } from 'lucide-react';
 import { PERSONAS } from '../services/mockAi';
+
+const PERSONA_ICONS = {
+  athena: Terminal,
+  aurora: Sparkles,
+  silas: Compass
+};
 
 export default function MessageItem({ message, personaId }) {
   const isUser = message.sender === 'user';
@@ -57,7 +63,14 @@ export default function MessageItem({ message, personaId }) {
             : persona.gradient
         }}
       >
-        {isUser ? 'U' : persona.avatar}
+        {isUser ? (
+          <User size={13} />
+        ) : (
+          (() => {
+            const Icon = PERSONA_ICONS[persona.id] || Sparkles;
+            return <Icon size={13} />;
+          })()
+        )}
       </div>
       <div className="message-bubble">
         {renderMessageContent(message.text)}

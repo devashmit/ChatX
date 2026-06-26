@@ -1,9 +1,15 @@
 import React, { useRef, useEffect } from 'react';
-import { Menu, MessageSquare } from 'lucide-react';
+import { Menu, MessageSquare, Terminal, Sparkles, Compass } from 'lucide-react';
 import { PERSONAS } from '../services/mockAi';
 import MessageItem from './MessageItem';
 import PersonaSelector from './PersonaSelector';
 import ChatInput from './ChatInput';
+
+const PERSONA_ICONS = {
+  athena: Terminal,
+  aurora: Sparkles,
+  silas: Compass
+};
 
 export default function ChatArea({
   conversation,
@@ -45,7 +51,10 @@ export default function ChatArea({
               className={`persona-avatar avatar-animated-${activePersona.id}`}
               style={{ background: activePersona.gradient }}
             >
-              {activePersona.avatar}
+              {(() => {
+                const Icon = PERSONA_ICONS[activePersona.id] || Sparkles;
+                return <Icon size={14} />;
+              })()}
             </div>
             <div className="persona-info">
               <span className="persona-name">{activePersona.name}</span>
@@ -88,7 +97,10 @@ export default function ChatArea({
                   className={`message-avatar avatar-animated-${activePersona.id}`}
                   style={{ background: activePersona.gradient }}
                 >
-                  {activePersona.avatar}
+                  {(() => {
+                    const Icon = PERSONA_ICONS[activePersona.id] || Sparkles;
+                    return <Icon size={14} />;
+                  })()}
                 </div>
                 <div className="message-bubble" style={{ display: 'flex', alignItems: 'center', minHeight: '44px' }}>
                   <div className="typing-indicator">

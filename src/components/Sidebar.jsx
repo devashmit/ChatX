@@ -1,5 +1,5 @@
 import React from 'react';
-import { Plus, Search, Trash2, MessageSquareCode, Menu, X } from 'lucide-react';
+import { Plus, Search, Trash2, MessageSquareCode, Menu, X, User } from 'lucide-react';
 
 export default function Sidebar({
   conversations,
@@ -89,7 +89,7 @@ export default function Sidebar({
 
         <div className="sidebar-footer">
           <div className="footer-user">
-            <div className="user-avatar">U</div>
+            <div className="user-avatar"><User size={14} /></div>
             <div className="user-name">User Guest</div>
           </div>
         </div>
