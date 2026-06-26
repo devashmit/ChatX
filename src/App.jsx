@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import Sidebar from './components/Sidebar';
 import ChatArea from './components/ChatArea';
-import { streamAiResponse } from './services/mockAi';
+import { streamAiResponse, getPersonaGreeting } from './services/mockAi';
 
 export default function App() {
   const [conversations, setConversations] = useState(() => {
@@ -51,23 +51,47 @@ export default function App() {
   const activeConversation = conversations.find(c => c.id === activeId);
   const activeMessages = activeConversation ? activeConversation.messages : [];
 
-  // Update current active conversation's persona
+  // Update current active conversation's persona or switch to existing agent thread
   const handleSelectPersona = (id) => {
     setPersonaId(id);
-    if (activeId) {
-      setConversations(prev =>
-        prev.map(c => (c.id === activeId ? { ...c, personaId: id } : c))
-      );
+    const existing = conversations.find(c => c.personaId === id);
+    if (existing) {
+      setActiveId(existing.id);
+    } else {
+      const newId = `chat_${Date.now()}`;
+      const greeting = getPersonaGreeting(id);
+      const welcomeMsg = {
+        id: `msg_${Date.now()}_assistant`,
+        sender: 'assistant',
+        text: greeting,
+        timestamp: Date.now()
+      };
+      const newChat = {
+        id: newId,
+        title: `${id.charAt(0).toUpperCase() + id.slice(1)} Chat`,
+        personaId: id,
+        messages: [welcomeMsg],
+        createdAt: Date.now()
+      };
+      setConversations(prev => [newChat, ...prev]);
+      setActiveId(newId);
     }
   };
 
   const handleNewConversation = () => {
     const newId = `chat_${Date.now()}`;
+    const greeting = getPersonaGreeting(personaId);
+    const welcomeMsg = {
+      id: `msg_${Date.now()}_assistant`,
+      sender: 'assistant',
+      text: greeting,
+      timestamp: Date.now()
+    };
     const newChat = {
       id: newId,
       title: 'New Conversation',
       personaId: personaId,
-      messages: [],
+      messages: [welcomeMsg],
       createdAt: Date.now()
     };
     setConversations(prev => [newChat, ...prev]);

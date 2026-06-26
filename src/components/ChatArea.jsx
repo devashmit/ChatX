@@ -156,7 +156,7 @@ export default function ChatArea({
         onSend={onSendMessage}
         disabled={isTyping}
         personaId={personaId}
-        showSuggestions={messages.length === 0}
+        showSuggestions={messages.filter(m => m.sender === 'user').length === 0}
         onSelectSuggestion={handleSuggestionClick}
       />
     </div>
