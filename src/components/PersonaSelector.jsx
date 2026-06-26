@@ -16,7 +16,7 @@ export default function PersonaSelector({ selectedId, onSelect }) {
             }}
           >
             <div
-              className="card-avatar"
+              className={`card-avatar avatar-animated-${p.id}`}
               style={{ background: p.gradient }}
             >
               {p.avatar}

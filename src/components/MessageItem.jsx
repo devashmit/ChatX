@@ -50,10 +50,10 @@ export default function MessageItem({ message, personaId }) {
   return (
     <div className={`message-bubble-container ${isUser ? 'user' : 'assistant'}`}>
       <div
-        className="message-avatar"
+        className={`message-avatar ${isUser ? 'avatar-user' : `avatar-animated-${persona.id}`}`}
         style={{
           background: isUser
-            ? 'linear-gradient(135deg, var(--color-accent), var(--color-primary))'
+            ? '#27272a'
             : persona.gradient
         }}
       >

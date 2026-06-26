@@ -42,7 +42,7 @@ export default function ChatArea({
           </button>
           <div className="persona-badge">
             <div
-              className="persona-avatar"
+              className={`persona-avatar avatar-animated-${activePersona.id}`}
               style={{ background: activePersona.gradient }}
             >
               {activePersona.avatar}
@@ -85,7 +85,7 @@ export default function ChatArea({
             {isTyping && (
               <div className="message-bubble-container assistant">
                 <div
-                  className="message-avatar"
+                  className={`message-avatar avatar-animated-${activePersona.id}`}
                   style={{ background: activePersona.gradient }}
                 >
                   {activePersona.avatar}
