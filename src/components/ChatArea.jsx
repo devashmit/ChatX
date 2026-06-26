@@ -65,6 +65,39 @@ export default function ChatArea({
             </div>
           </div>
         </div>
+
+        {/* Switcher aligned to the right */}
+        <div className="agent-switcher" style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+          <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginRight: '4px', fontWeight: 500 }}>Agent:</span>
+          {PERSONAS.map(p => {
+            const Icon = PERSONA_ICONS[p.id] || Sparkles;
+            const isCurrent = p.id === personaId;
+            return (
+              <button
+                key={p.id}
+                onClick={() => setPersonaId(p.id)}
+                title={`Switch to ${p.name}`}
+                style={{
+                  width: '26px',
+                  height: '26px',
+                  borderRadius: '50%',
+                  background: p.gradient,
+                  border: isCurrent ? '1.5px solid #ffffff' : '1px solid rgba(255, 255, 255, 0.08)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  color: 'white',
+                  cursor: 'pointer',
+                  transition: 'all 0.2s',
+                  transform: isCurrent ? 'scale(1.08)' : 'scale(1)',
+                  boxShadow: isCurrent ? '0 0 8px rgba(255, 255, 255, 0.15)' : 'none'
+                }}
+              >
+                <Icon size={11} />
+              </button>
+            );
+          })}
+        </div>
       </header>
 
       {/* Main Conversation viewport */}
