@@ -677,19 +677,42 @@ export function streamAiResponse(personaId, userPrompt, onChunk, onComplete) {
 
   // 10. Format according to specific Persona System Instructions
   const cleanPrompt = userPrompt.length > 50 ? userPrompt.substring(0, 47) + '...' : userPrompt;
+  const isDefinitionQuery = promptLower.includes('what is') || 
+                            promptLower.includes('what are') || 
+                            promptLower.includes('define') || 
+                            promptLower.includes('explain') || 
+                            promptLower.includes('meaning of');
+
   if (personaId === 'athena') {
-    // Extract code block if present
-    let codeBlock = '';
-    let textContent = responseText;
-    const match = responseText.match(/```(?:javascript|css|sql|json)?\n([\s\S]*?)```/);
-    if (match) {
-      codeBlock = match[1];
-      textContent = responseText.replace(/```(?:javascript|css|sql|json)?\n[\s\S]*?```/g, '').trim();
+    if (isDefinitionQuery) {
+      // Conceptual response format (omitting rigid codeblock template)
+      const cleanText = responseText.replace(/### Code Snippet\n```[\s\S]*?```/g, '').trim();
+      responseText = `### Technical Concept: "${cleanPrompt}"
+
+${cleanText}
+
+### Key Architectures & Trade-offs
+- **Core Principle**: Decoupling components and maintaining a clean division of concerns.
+- **Trade-offs**: Conceptual definitions are fast to communicate, but production environments require concrete constraints.
+- **Best Practice**: Always model system states and interface protocols before starting line-by-line coding.
+
+Next Steps:
+1. Verify system scaling and latency requirements.
+2. Ask for code blocks specifically if you are ready to implement this concept.
+3. Review associated architectural patterns.`;
     } else {
-      codeBlock = `// Solution for ${cleanPrompt}\nfunction resolveRequest() {\n  // Implement logic safely\n  try {\n    return true;\n  } catch (error) {\n    console.error("Architect Exception:", error);\n    throw error;\n  }\n}`;
-    }
-    
-    responseText = `### Problem
+      // Extract code block if present
+      let codeBlock = '';
+      let textContent = responseText;
+      const match = responseText.match(/```(?:javascript|css|sql|json)?\n([\s\S]*?)```/);
+      if (match) {
+        codeBlock = match[1];
+        textContent = responseText.replace(/```(?:javascript|css|sql|json)?\n[\s\S]*?```/g, '').trim();
+      } else {
+        codeBlock = `// Solution for ${cleanPrompt}\nfunction resolveRequest() {\n  // Implement logic safely\n  try {\n    return true;\n  } catch (error) {\n    console.error("Architect Exception:", error);\n    throw error;\n  }\n}`;
+      }
+      
+      responseText = `### Problem
 Need to resolve technical requirement: "${cleanPrompt}".
 
 ### Approach
@@ -709,6 +732,7 @@ Next Steps:
 1. Integrate the script into your project.
 2. Run standard suite of unit tests.
 3. Validate API boundary limits in staging environment.`;
+    }
   }
   else if (personaId === 'aurora') {
     const evocativeOpenings = [

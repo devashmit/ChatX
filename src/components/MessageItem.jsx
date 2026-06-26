@@ -12,7 +12,26 @@ export default function MessageItem({ message, personaId }) {
   const isUser = message.sender === 'user';
   const persona = PERSONAS.find(p => p.id === personaId) || PERSONAS[0];
 
-  // A very basic markdown parser to handle code blocks and inline code
+  const parseInline = (text) => {
+    if (!text) return '';
+    // Parse inline code: `code`
+    const codeParts = text.split(/`([^`]+)`/g);
+    return codeParts.map((subPart, index) => {
+      if (index % 2 === 1) {
+        return <code key={index}>{subPart}</code>;
+      }
+      // Parse bold: **text**
+      const boldParts = subPart.split(/\*\*([^*]+)\*\*/g);
+      return boldParts.map((boldPart, boldIndex) => {
+        if (boldIndex % 2 === 1) {
+          return <strong key={boldIndex}>{boldPart}</strong>;
+        }
+        return boldPart;
+      });
+    });
+  };
+
+  // A comprehensive markdown parser to handle blocks (headers, lists, paragraphs) and inline styles
   const renderMessageContent = (content) => {
     if (!content) return null;
     
@@ -21,7 +40,6 @@ export default function MessageItem({ message, personaId }) {
     return parts.map((part, index) => {
       // If index is odd, it's a code block
       if (index % 2 === 1) {
-        // Find language if specified (e.g. "javascript\ncode...")
         const match = part.match(/^([a-zA-Z0-9+#-]+)?\n([\s\S]*)$/);
         const language = match ? match[1] || 'code' : 'code';
         const code = match ? match[2] : part;
@@ -31,25 +49,63 @@ export default function MessageItem({ message, personaId }) {
         );
       }
 
-      // If even, it is standard text. Parse inline code: `code`
-      const inlineParts = part.split(/`([^`]+)`/g);
-      return (
-        <p key={index}>
-          {inlineParts.map((subPart, subIndex) => {
-            if (subIndex % 2 === 1) {
-              return <code key={subIndex}>{subPart}</code>;
-            }
-            // Parse bold: **text**
-            const boldParts = subPart.split(/\*\*([^*]+)\*\*/g);
-            return boldParts.map((boldPart, boldIndex) => {
-              if (boldIndex % 2 === 1) {
-                return <strong key={boldIndex}>{boldPart}</strong>;
-              }
-              return boldPart;
-            });
-          })}
-        </p>
-      );
+      // Even index: standard text blocks. Split by lines to render headers, lists, paragraphs
+      const lines = part.split('\n');
+      const elements = [];
+      let currentList = [];
+
+      const flushList = (key) => {
+        if (currentList.length > 0) {
+          elements.push(
+            <ul key={`list-${key}`} style={{ margin: '8px 0 8px 20px', listStyleType: 'disc' }}>
+              {currentList}
+            </ul>
+          );
+          currentList = [];
+        }
+      };
+
+      for (let i = 0; i < lines.length; i++) {
+        const line = lines[i];
+        const trimmed = line.trim();
+
+        // 1. Headers (###, ##, #)
+        if (trimmed.startsWith('### ')) {
+          flushList(i);
+          elements.push(<h3 key={i} style={{ margin: '14px 0 6px 0', fontSize: '1.05rem', fontWeight: 600, color: 'var(--text-primary)' }}>{parseInline(trimmed.substring(4))}</h3>);
+        } else if (trimmed.startsWith('## ')) {
+          flushList(i);
+          elements.push(<h2 key={i} style={{ margin: '16px 0 8px 0', fontSize: '1.15rem', fontWeight: 600, color: 'var(--text-primary)' }}>{parseInline(trimmed.substring(3))}</h2>);
+        } else if (trimmed.startsWith('# ')) {
+          flushList(i);
+          elements.push(<h1 key={i} style={{ margin: '18px 0 10px 0', fontSize: '1.30rem', fontWeight: 700, color: 'var(--text-primary)' }}>{parseInline(trimmed.substring(2))}</h1>);
+        }
+        // 2. Unordered lists (- or *)
+        else if (trimmed.startsWith('- ') || trimmed.startsWith('* ')) {
+          currentList.push(<li key={`li-${i}`} style={{ margin: '4px 0', fontSize: '0.9rem', color: 'var(--text-primary)' }}>{parseInline(trimmed.substring(2))}</li>);
+        }
+        // 3. Ordered lists (1., 2., etc.)
+        else if (/^\d+\.\s/.test(trimmed)) {
+          flushList(i);
+          const match = trimmed.match(/^(\d+)\.\s(.*)$/);
+          elements.push(
+            <ol key={i} start={match[1]} style={{ margin: '8px 0 8px 24px', color: 'var(--text-primary)' }}>
+              <li style={{ margin: '4px 0', fontSize: '0.9rem' }}>{parseInline(match[2])}</li>
+            </ol>
+          );
+        }
+        // 4. Blank lines
+        else if (trimmed === '') {
+          flushList(i);
+        }
+        // 5. Standard Paragraphs
+        else {
+          flushList(i);
+          elements.push(<p key={i} style={{ margin: '8px 0', lineHeight: 1.55 }}>{parseInline(line)}</p>);
+        }
+      }
+      flushList('end');
+      return <React.Fragment key={index}>{elements}</React.Fragment>;
     });
   };
 
