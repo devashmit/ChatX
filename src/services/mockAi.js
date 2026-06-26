@@ -76,7 +76,6 @@ const RESPONSES = {
   }
 };
 
-// Comprehensive IT & Software Engineering Knowledge Base
 const IT_DATABASE = {
   closure: {
     title: "JavaScript Closures",
@@ -158,6 +157,30 @@ export function useFetch(url) {
       "**Dependency Array**: Re-runs the effect whenever the URL changes."
     ]
   },
+  react_native: {
+    title: "React Native",
+    desc: "React Native is an open-source framework created by Meta that allows developers to build native mobile applications for iOS and Android using React and JavaScript. Unlike mobile web wrappers, React Native renders actual native UI components, delivering native performance and feel.",
+    code: `import React from 'react';
+import { Text, View, StyleSheet } from 'react-native';
+
+export default function App() {
+  return (
+    <View style={styles.container}>
+      <Text style={styles.text}>Welcome to React Native!</Text>
+    </View>
+  );
+}
+
+const styles = StyleSheet.create({
+  container: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#09090b' },
+  text: { color: '#f4f4f5', fontSize: 18 }
+});`,
+    points: [
+      "**Native Bridge**: Translates JavaScript code into native platform API calls and UI widgets.",
+      "**Cross-Platform**: Write once, run on both iOS and Android with minor platform-specific adjustments.",
+      "**Fast Refresh**: See code updates instantly without full compilation cycles."
+    ]
+  },
   react: {
     title: "React Component Lifecycle & Hooks",
     desc: "React uses functional components with Hooks to manage state, side-effects, and DOM rendering efficiently.",
@@ -179,6 +202,92 @@ export function Counter() {
       "**Functional Rendering**: Components re-render whenever their state or props change."
     ]
   },
+  typescript: {
+    title: "TypeScript",
+    desc: "TypeScript is a strongly typed, open-source programming language developed by Microsoft that builds on JavaScript by adding static type definitions.",
+    code: `interface User {
+  id: number;
+  name: string;
+  email?: string; // Optional property
+}
+
+function greetUser(user: User): string {
+  return \`Hello, \${user.name}! (ID: \${user.id})\`;
+}
+
+const user: User = { id: 1, name: "Alice" };
+console.log(greetUser(user));`,
+    points: [
+      "**Static Typing**: Catches type mismatches and syntax errors during compile time rather than runtime.",
+      "**JavaScript Superset**: Any valid JavaScript code is also valid TypeScript code.",
+      "**Rich Tooling**: Provides excellent autocomplete, inline documentation, and refactoring support in modern IDEs."
+    ]
+  },
+  oop: {
+    title: "Object-Oriented Programming (OOP)",
+    desc: "Object-Oriented Programming is a programming paradigm based on the concept of 'objects', which can contain data (in the form of fields or attributes) and code (in the form of methods).",
+    code: `class Animal {
+  constructor(name) {
+    this.name = name;
+  }
+  speak() {
+    return \`\${this.name} makes a sound.\`;
+  }
+}
+
+class Dog extends Animal {
+  speak() {
+    return \`\${this.name} barks.\`;
+  }
+}
+
+const myDog = new Dog("Buddy");
+console.log(myDog.speak()); // Buddy barks.`,
+    points: [
+      "**Encapsulation**: Bundling state and behaviors together inside objects, hiding inner implementation details.",
+      "**Inheritance**: The mechanism of creating new classes based on existing ones to reuse code.",
+      "**Polymorphism**: The ability for different classes to implement the same method in unique ways (method overriding)."
+    ]
+  },
+  functional_programming: {
+    title: "Functional Programming (FP)",
+    desc: "Functional Programming is a paradigm where programs are constructed by applying and composing pure functions, avoiding shared state, mutable data, and side effects.",
+    code: `const numbers = [1, 2, 3, 4, 5];
+
+// Pure functions used for transformation
+const double = (x) => x * 2;
+const isEven = (x) => x % 2 === 0;
+
+const doubledEvens = numbers
+  .filter(isEven)
+  .map(double);
+
+console.log(doubledEvens); // [4, 8]`,
+    points: [
+      "**Pure Functions**: Functions that always return the same output for a given input and cause no side effects.",
+      "**Immutability**: Once created, data states cannot be modified. Instead, new data structures are generated.",
+      "**First-Class Functions**: Functions are treated as values, meaning they can be passed as arguments or returned from other functions."
+    ]
+  },
+  nodejs: {
+    title: "Node.js JavaScript Runtime",
+    desc: "Node.js is an open-source, cross-platform JavaScript runtime environment built on Chrome's V8 engine that executes JavaScript code outside a web browser.",
+    code: `const http = require('http');
+
+const server = http.createServer((req, res) => {
+  res.writeHead(200, { 'Content-Type': 'application/json' });
+  res.end(JSON.stringify({ message: "Hello from Node.js server!" }));
+});
+
+server.listen(3000, () => {
+  console.log("Server running on port 3000");
+});`,
+    points: [
+      "**Event-Driven**: Relies on an asynchronous event loop to handle thousands of concurrent operations on a single thread.",
+      "**NPM Ecosystem**: Grants access to the largest software registry in the world for reusable packages.",
+      "**Full-Stack JavaScript**: Enables developers to write both client-side and server-side code using a single programming language."
+    ]
+  },
   database: {
     title: "Database Optimization & Indexes",
     desc: "Optimizing database queries is essential for application performance. Indexes speed up data retrieval at the cost of additional write overhead and storage space.",
@@ -193,6 +302,28 @@ WHERE email = 'developer@chatx.ai';`,
       "**B-Tree Indexes**: Default indexes useful for equality and range queries (e.g. `<`, `>`, `=`).",
       "**Write Overhead**: Every insert, update, or delete query requires updating the index, which can slow down write operations.",
       "**Execution Plan**: Use `EXPLAIN` or `EXPLAIN ANALYZE` to check if your queries are scanning tables or utilizing indexes properly."
+    ]
+  },
+  nosql: {
+    title: "NoSQL Databases",
+    desc: "NoSQL databases provide a mechanism for storage and retrieval of data that is modeled in means other than the tabular relations used in relational databases.",
+    code: `// MongoDB node driver insert and query example
+const { MongoClient } = require('mongodb');
+const client = new MongoClient('mongodb://localhost:27017');
+
+async function run() {
+  await client.connect();
+  const db = client.db('chatx');
+  const users = db.collection('users');
+  
+  await users.insertOne({ name: "Alice", role: "Developer" });
+  const user = await users.findOne({ name: "Alice" });
+  console.log(user);
+}`,
+    points: [
+      "**Flexible Schemas**: Supports unstructured data such as key-value, document, column-family, or graph formats.",
+      "**Horizontal Scaling**: Designed to scale out across commodity servers rather than scaling up a single server.",
+      "**No Joins**: Relies on nested/embedded documents or denormalization instead of complex SQL joins."
     ]
   },
   sql: {
@@ -273,6 +404,141 @@ createPost('Hello ChatX', 'Content details here...').then(console.log);`,
       "**JSON Format**: The standard payload format for modern REST communication.",
       "**CORS**: Cross-Origin Resource Sharing must be configured on the server to allow frontend client requests."
     ]
+  },
+  ci_cd: {
+    title: "CI/CD & DevOps Pipelines",
+    desc: "Continuous Integration (CI) and Continuous Delivery/Deployment (CD) automate building, testing, and deploying code updates to production environments.",
+    code: `# Sample GitHub Actions Workflow (.github/workflows/ci.yml)
+name: Node CI
+on: [push, pull_request]
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Use Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - run: npm ci
+      - run: npm run test`,
+    points: [
+      "**Automation**: Eliminates manual steps in the deployment process, reducing human error.",
+      "**Fast Feedback**: Quickly alerts developers if their commits break tests or fail compilation.",
+      "**Infrastructure as Code (IaC)**: Configuration files define environment builds alongside code repositories."
+    ]
+  },
+  unit_testing: {
+    title: "Unit Testing & QA",
+    desc: "Unit testing involves testing individual units or components of software in isolation from the rest of the application to verify correctness.",
+    code: `// Simple Jest unit test suite
+const add = (a, b) => a + b;
+
+describe('add function', () => {
+  test('adds two positive numbers correctly', () => {
+    expect(add(2, 3)).toBe(5);
+  });
+  
+  test('handles zero arguments', () => {
+    expect(add(5, 0)).toBe(5);
+  });
+});`,
+    points: [
+      "**Isolation**: Tests should mock database calls, API endpoints, or filesystem states to run fast and predictably.",
+      "**Test-Driven Development (TDD)**: Writing failing unit tests before writing the actual feature code.",
+      "**Coverage Metrics**: Measures the percentage of code lines executed during testing."
+    ]
+  },
+  data_structures: {
+    title: "Data Structures",
+    desc: "A data structure is a specialized format for organizing, processing, retrieving, and storing data in computer memory.",
+    code: `// Simple Stack implementation (LIFO) in JavaScript
+class Stack {
+  constructor() {
+    this.items = [];
+  }
+  push(element) { this.items.push(element); }
+  pop() { return this.items.pop(); }
+  peek() { return this.items[this.items.length - 1]; }
+  isEmpty() { return this.items.length === 0; }
+}
+
+const stack = new Stack();
+stack.push("App1");
+console.log(stack.pop()); // "App1"`,
+    points: [
+      "**Efficiency**: Choosing the correct structure (e.g. Arrays, HashMaps, Trees, Graphs) affects Big O runtimes.",
+      "**LIFO vs FIFO**: Stacks utilize Last-In-First-Out, whereas Queues utilize First-In-First-Out.",
+      "**Hash Collisions**: Occur when two distinct keys yield the same index in a HashTable; resolved by chaining or probing."
+    ]
+  },
+  agile: {
+    title: "Agile Software Development",
+    desc: "Agile is an iterative, team-centric approach to software development emphasizing continuous delivery, incremental updates, and active stakeholder feedback.",
+    code: `/* Typical Scrum Agile Lifecycle
+1. Product Backlog Refinement
+2. Sprint Planning (defining 2-week targets)
+3. Daily Standups (updating blocks, tasks)
+4. Sprint Review & Retrospective (reflecting on cycles) */`,
+    points: [
+      "**Sprint Cycles**: Timeboxed intervals (usually 2-4 weeks) focused on delivering working increments.",
+      "**MVP (Minimum Viable Product)**: Shipping the smallest set of features necessary to gather user feedback.",
+      "**Retrospective**: Team reviews after each cycle to identify workflow improvements."
+    ]
+  },
+  python: {
+    title: "Python Programming Language",
+    desc: "Python is a high-level, interpreted programming language known for its emphasis on code readability, dynamic typing, and clear whitespace formatting.",
+    code: `# List comprehension in Python
+numbers = [1, 2, 3, 4, 5]
+squared_evens = [x**2 for x in numbers if x % 2 == 0]
+
+print(squared_evens) # Output: [4, 16]`,
+    points: [
+      "**Indentation**: Python uses block indentation (spaces) instead of curly braces to define code scopes.",
+      "**Batteries Included**: Shipped with a massive standard library containing pre-packaged tools for many tasks.",
+      "**Multi-Paradigm**: Supports structured, object-oriented, and functional programming patterns."
+    ]
+  },
+  html: {
+    title: "HTML (HyperText Markup Language)",
+    desc: "HTML is the standard markup language used to create the structural layout and elements of documents displayed in web browsers.",
+    code: `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Minimal HTML Page</title>
+</head>
+<body>
+  <main>
+    <h1>Welcome to ChatX</h1>
+    <p>Modern Premium Chat Interface.</p>
+  </main>
+</body>
+</html>`,
+    points: [
+      "**DOM Tree**: The browser parses HTML nodes into a Document Object Model tree structure.",
+      "**Semantic Tags**: Using tags like `<main>`, `<article>`, or `<section>` improves SEO and accessibility.",
+      "**Hyperlinks**: Connects documents across the World Wide Web using anchor (`<a>`) tags."
+    ]
+  },
+  css: {
+    title: "CSS (Cascading Style Sheets)",
+    desc: "CSS is a style sheet language used to describe the presentation, layouts, colors, and formatting of documents written in HTML.",
+    code: `/* Flexbox layout alignment style */
+.app-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+  background-color: #09090b;
+  color: #f4f4f5;
+}`,
+    points: [
+      "**Cascade & Specificity**: Rules apply based on selector specificity and document order.",
+      "**Box Model**: Every element is a box containing margin, border, padding, and content layers.",
+      "**Media Queries**: Used to build responsive layouts that adjust smoothly to different screen resolutions."
+    ]
   }
 };
 
@@ -318,10 +584,24 @@ export function streamAiResponse(personaId, userPrompt, onChunk, onComplete) {
     }
     // 3. IT & Programming Database Lookup
     else {
-      const itKey = Object.keys(IT_DATABASE).find(key => promptLower.includes(key));
+      const sortedKeys = Object.keys(IT_DATABASE).sort((a, b) => b.length - a.length);
+      const itKey = sortedKeys.find(key => promptLower.includes(key.replace('_', ' ')));
+      
       if (itKey) {
         const item = IT_DATABASE[itKey];
-        responseText = `### ${item.title}\n\n${item.desc}\n\n### Code Snippet\n\`\`\`javascript\n${item.code}\n\`\`\`\n\n### Key Concepts:\n${item.points.map(p => `- ${p}`).join('\n')}`;
+        const isDefinitionQuery = promptLower.includes('what is') || 
+                                  promptLower.includes('what are') || 
+                                  promptLower.includes('define') || 
+                                  promptLower.includes('explain') || 
+                                  promptLower.includes('meaning of');
+        
+        if (isDefinitionQuery && personaId !== 'athena') {
+          // Omit code blocks for pure definitions on Aurora/Silas
+          responseText = `### ${item.title}\n\n${item.desc}\n\nKey Concepts:\n${item.points.map(p => `- ${p}`).join('\n')}`;
+        } else {
+          // Standard response with code snippet
+          responseText = `### ${item.title}\n\n${item.desc}\n\n### Code Snippet\n\`\`\`javascript\n${item.code}\n\`\`\`\n\n### Key Concepts:\n${item.points.map(p => `- ${p}`).join('\n')}`;
+        }
       }
       // 4. Common Programming bug/error response
       else if (promptLower.includes('bug') || promptLower.includes('error') || promptLower.includes('debug') || promptLower.includes('broken')) {
