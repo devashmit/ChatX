@@ -27,7 +27,7 @@ export default function Sidebar({
         <div className="sidebar-header">
           <div className="brand">
             <MessageSquareCode className="brand-icon" size={24} />
-            <span>AuraChat</span>
+            <span>ChatX</span>
           </div>
           <button className="menu-toggle" onClick={() => setIsOpen(false)}>
             <X size={20} />

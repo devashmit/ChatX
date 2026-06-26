@@ -5,12 +5,12 @@ import { streamAiResponse } from './services/mockAi';
 
 export default function App() {
   const [conversations, setConversations] = useState(() => {
-    const saved = localStorage.getItem('aurachat_conversations');
+    const saved = localStorage.getItem('chatx_conversations') || localStorage.getItem('aurachat_conversations');
     return saved ? JSON.parse(saved) : [];
   });
 
   const [activeId, setActiveId] = useState(() => {
-    const saved = localStorage.getItem('aurachat_active_id');
+    const saved = localStorage.getItem('chatx_active_id') || localStorage.getItem('aurachat_active_id');
     return saved || null;
   });
 
@@ -24,20 +24,20 @@ export default function App() {
 
   // Sync conversations to localStorage
   useEffect(() => {
-    localStorage.setItem('aurachat_conversations', JSON.stringify(conversations));
+    localStorage.setItem('chatx_conversations', JSON.stringify(conversations));
   }, [conversations]);
 
   // Sync activeId to localStorage
   useEffect(() => {
     if (activeId) {
-      localStorage.setItem('aurachat_active_id', activeId);
+      localStorage.setItem('chatx_active_id', activeId);
       // Sync persona of current conversation
       const current = conversations.find(c => c.id === activeId);
       if (current) {
         setPersonaId(current.personaId);
       }
     } else {
-      localStorage.removeItem('aurachat_active_id');
+      localStorage.removeItem('chatx_active_id');
     }
   }, [activeId, conversations]);
 
