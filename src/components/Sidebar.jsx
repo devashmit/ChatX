@@ -1,7 +1,9 @@
 import React from 'react';
-import { Plus, Search, Trash2, MessageSquareCode, Menu, X, User } from 'lucide-react';
+import { Plus, Search, Trash2, MessageSquareCode, X, User, LogOut } from 'lucide-react';
 
 export default function Sidebar({
+  currentUser,
+  onLogout,
   conversations,
   activeId,
   searchQuery,
@@ -90,10 +92,16 @@ export default function Sidebar({
         <div className="sidebar-footer">
           <div className="footer-user">
             <div className="user-avatar"><User size={14} /></div>
-            <div className="user-name">User Guest</div>
+            <div className="user-name" title={currentUser?.username || "Guest"}>
+              {currentUser?.username || "Guest"}
+            </div>
           </div>
+          <button className="logout-btn" id="logout-btn" title="Log Out" onClick={onLogout}>
+            <LogOut size={16} />
+          </button>
         </div>
       </aside>
     </>
   );
 }
+

@@ -1,18 +1,21 @@
 import React, { useState, useEffect, useRef } from 'react';
 import Sidebar from './components/Sidebar';
 import ChatArea from './components/ChatArea';
+import LandingPage from './components/LandingPage';
+import AuthPage from './components/AuthPage';
 import { streamAiResponse, getPersonaGreeting } from './services/mockAi';
+import { 
+  getCurrentUserSession, 
+  setCurrentUserSession, 
+  clearCurrentUserSession,
+  safeSetItem
+} from './services/storageUtils';
 
 export default function App() {
-  const [conversations, setConversations] = useState(() => {
-    const saved = localStorage.getItem('chatx_conversations') || localStorage.getItem('aurachat_conversations');
-    return saved ? JSON.parse(saved) : [];
-  });
-
-  const [activeId, setActiveId] = useState(() => {
-    const saved = localStorage.getItem('chatx_active_id') || localStorage.getItem('aurachat_active_id');
-    return saved || null;
-  });
+  const [currentUser, setCurrentUser] = useState(null);
+  const [currentView, setCurrentView] = useState('landing');
+  const [conversations, setConversations] = useState([]);
+  const [activeId, setActiveId] = useState(null);
 
   const [personaId, setPersonaId] = useState('athena');
   const [input, setInput] = useState('');
@@ -22,24 +25,65 @@ export default function App() {
   
   const cancelStreamRef = useRef(null);
 
-  // Sync conversations to localStorage
+  // Check active session on mount
   useEffect(() => {
-    localStorage.setItem('chatx_conversations', JSON.stringify(conversations));
-  }, [conversations]);
+    const session = getCurrentUserSession();
+    if (session) {
+      const SESSION_TIMEOUT = 24 * 60 * 60 * 1000; // 24 hours
+      if (Date.now() - session.loginTime < SESSION_TIMEOUT) {
+        setCurrentUser(session);
+        setCurrentView('chat');
+      } else {
+        handleLogout();
+      }
+    }
+  }, []);
 
-  // Sync activeId to localStorage
+  // Load user-specific conversations and activeId when user changes
   useEffect(() => {
-    if (activeId) {
-      localStorage.setItem('chatx_active_id', activeId);
-      // Sync persona of current conversation
-      const current = conversations.find(c => c.id === activeId);
-      if (current) {
-        setPersonaId(current.personaId);
+    if (currentUser) {
+      try {
+        const saved = localStorage.getItem(`chatx_conversations_${currentUser.username}`);
+        const parsed = saved ? JSON.parse(saved) : [];
+        setConversations(parsed);
+
+        const savedActiveId = localStorage.getItem(`chatx_active_id_${currentUser.username}`);
+        setActiveId(savedActiveId || null);
+      } catch (e) {
+        console.error("Failed to load user chats", e);
+        setConversations([]);
+        setActiveId(null);
       }
     } else {
-      localStorage.removeItem('chatx_active_id');
+      setConversations([]);
+      setActiveId(null);
     }
-  }, [activeId, conversations]);
+  }, [currentUser]);
+
+  // Sync conversations to user-prefixed localStorage
+  useEffect(() => {
+    if (currentUser && conversations.length > 0) {
+      safeSetItem(`chatx_conversations_${currentUser.username}`, conversations);
+    } else if (currentUser && conversations.length === 0) {
+      localStorage.removeItem(`chatx_conversations_${currentUser.username}`);
+    }
+  }, [conversations, currentUser]);
+
+  // Sync activeId to user-prefixed localStorage
+  useEffect(() => {
+    if (currentUser) {
+      if (activeId) {
+        safeSetItem(`chatx_active_id_${currentUser.username}`, activeId);
+        // Sync persona of current conversation
+        const current = conversations.find(c => c.id === activeId);
+        if (current) {
+          setPersonaId(current.personaId);
+        }
+      } else {
+        localStorage.removeItem(`chatx_active_id_${currentUser.username}`);
+      }
+    }
+  }, [activeId, conversations, currentUser]);
 
   // Cleanup streaming on unmount
   useEffect(() => {
@@ -47,6 +91,28 @@ export default function App() {
       if (cancelStreamRef.current) cancelStreamRef.current();
     };
   }, []);
+
+  const handleLoginSuccess = (username) => {
+    const session = { username, loginTime: Date.now() };
+    setCurrentUserSession(session);
+    setCurrentUser(session);
+    setCurrentView('chat');
+  };
+
+  const handleLogout = () => {
+    if (cancelStreamRef.current) {
+      cancelStreamRef.current();
+    }
+    clearCurrentUserSession();
+    setCurrentUser(null);
+    setConversations([]);
+    setActiveId(null);
+    setInput('');
+    setIsTyping(false);
+    setSearchQuery('');
+    setSidebarOpen(false);
+    setCurrentView('landing');
+  };
 
   const activeConversation = conversations.find(c => c.id === activeId);
   const activeMessages = activeConversation ? activeConversation.messages : [];
@@ -199,6 +265,19 @@ export default function App() {
     );
   };
 
+  if (currentView === 'landing') {
+    return <LandingPage onNavigateAuth={() => setCurrentView('auth')} />;
+  }
+
+  if (currentView === 'auth') {
+    return (
+      <AuthPage 
+        onLoginSuccess={handleLoginSuccess} 
+        onBackToLanding={() => setCurrentView('landing')} 
+      />
+    );
+  }
+
   return (
     <div className="app-container">
       {/* Background decoration */}
@@ -209,6 +288,8 @@ export default function App() {
 
       {/* Sidebar history panel */}
       <Sidebar
+        currentUser={currentUser}
+        onLogout={handleLogout}
         conversations={conversations}
         activeId={activeId}
         searchQuery={searchQuery}
