@@ -550,7 +550,14 @@ export function getPersonaGreeting(personaId) {
 /**
  * Simulates streaming AI response chunk-by-chunk.
  */
-export function streamAiResponse(personaId, userPrompt, onChunk, onComplete) {
+export function streamAiResponse(personaId, userPrompt, onChunk, onComplete, onError, shouldFail = false) {
+  if (shouldFail) {
+    const timeoutId = setTimeout(() => {
+      if (onError) onError(new Error("Connection lost. Failed to fetch response from AI. Please check your connection and retry."));
+    }, 1200);
+    return () => clearTimeout(timeoutId);
+  }
+
   const pData = RESPONSES[personaId] || RESPONSES.silas;
   const promptLower = userPrompt.toLowerCase().trim();
   
