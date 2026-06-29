@@ -1,5 +1,5 @@
 import React, { useRef, useEffect } from 'react';
-import { Menu, MessageSquare, Terminal, Sparkles, Compass } from 'lucide-react';
+import { Menu, MessageSquare, Terminal, Sparkles, Compass, Plus, WifiOff } from 'lucide-react';
 import { PERSONAS } from '../services/mockAi';
 import MessageItem from './MessageItem';
 import PersonaSelector from './PersonaSelector';
@@ -20,7 +20,11 @@ export default function ChatArea({
   input,
   setInput,
   onSendMessage,
-  onSidebarToggle
+  onSidebarToggle,
+  simulateError,
+  setSimulateError,
+  onRetry,
+  onNewChat
 }) {
   const messagesEndRef = useRef(null);
   const activePersona = PERSONAS.find(p => p.id === personaId) || PERSONAS[0];
@@ -66,37 +70,59 @@ export default function ChatArea({
           </div>
         </div>
 
-        {/* Switcher aligned to the right */}
-        <div className="agent-switcher" style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-          <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginRight: '4px', fontWeight: 500 }}>Agent:</span>
-          {PERSONAS.map(p => {
-            const Icon = PERSONA_ICONS[p.id] || Sparkles;
-            const isCurrent = p.id === personaId;
-            return (
-              <button
-                key={p.id}
-                onClick={() => setPersonaId(p.id)}
-                title={`Switch to ${p.name}`}
-                style={{
-                  width: '26px',
-                  height: '26px',
-                  borderRadius: '50%',
-                  background: p.gradient,
-                  border: isCurrent ? '1.5px solid #ffffff' : '1px solid rgba(255, 255, 255, 0.08)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  color: 'white',
-                  cursor: 'pointer',
-                  transition: 'all 0.2s',
-                  transform: isCurrent ? 'scale(1.08)' : 'scale(1)',
-                  boxShadow: isCurrent ? '0 0 8px rgba(255, 255, 255, 0.15)' : 'none'
-                }}
-              >
-                <Icon size={11} />
-              </button>
-            );
-          })}
+        {/* Header actions including new chat, simulate error toggle and switcher */}
+        <div className="header-actions" style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
+          <button 
+            className="header-new-chat-btn" 
+            onClick={onNewChat} 
+            title="Start a new chat"
+          >
+            <Plus size={15} />
+            <span className="btn-text">New Chat</span>
+          </button>
+
+          <button
+            onClick={() => setSimulateError(!simulateError)}
+            className={`simulate-error-toggle ${simulateError ? 'active' : ''}`}
+            title="Simulate connection error to test retry feature"
+          >
+            <WifiOff size={13} />
+            <span className="btn-text">Simulate Error</span>
+          </button>
+
+          <span className="divider-vr" style={{ width: '1px', height: '16px', background: 'var(--glass-border)' }} />
+
+          <div className="agent-switcher" style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
+            <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginRight: '4px', fontWeight: 500 }} className="agent-label">Agent:</span>
+            {PERSONAS.map(p => {
+              const Icon = PERSONA_ICONS[p.id] || Sparkles;
+              const isCurrent = p.id === personaId;
+              return (
+                <button
+                  key={p.id}
+                  onClick={() => setPersonaId(p.id)}
+                  title={`Switch to ${p.name}`}
+                  style={{
+                    width: '26px',
+                    height: '26px',
+                    borderRadius: '50%',
+                    background: p.gradient,
+                    border: isCurrent ? '1.5px solid #ffffff' : '1px solid rgba(255, 255, 255, 0.08)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    color: 'white',
+                    cursor: 'pointer',
+                    transition: 'all 0.2s',
+                    transform: isCurrent ? 'scale(1.08)' : 'scale(1)',
+                    boxShadow: isCurrent ? '0 0 8px rgba(255, 255, 255, 0.15)' : 'none'
+                  }}
+                >
+                  <Icon size={11} />
+                </button>
+              );
+            })}
+          </div>
         </div>
       </header>
 
@@ -120,11 +146,12 @@ export default function ChatArea({
                 key={msg.id}
                 message={msg}
                 personaId={personaId}
+                onRetry={onRetry}
               />
             ))}
             
             {/* Simulated typing indicator */}
-            {isTyping && (
+            {isTyping && !messages.some(m => m.sender === 'assistant' && !m.text && !m.error) && (
               <div className="message-bubble-container assistant">
                 <div
                   className={`message-avatar avatar-animated-${activePersona.id}`}

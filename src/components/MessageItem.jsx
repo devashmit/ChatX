@@ -8,9 +8,16 @@ const PERSONA_ICONS = {
   silas: Compass
 };
 
-export default function MessageItem({ message, personaId }) {
+export default function MessageItem({ message, personaId, onRetry }) {
+  const [copied, setCopied] = useState(false);
   const isUser = message.sender === 'user';
   const persona = PERSONAS.find(p => p.id === personaId) || PERSONAS[0];
+
+  const handleCopyMessage = () => {
+    navigator.clipboard.writeText(message.text);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
 
   const parseInline = (text) => {
     if (!text) return '';
@@ -128,10 +135,40 @@ export default function MessageItem({ message, personaId }) {
           })()
         )}
       </div>
-      <div className="message-bubble">
-        {renderMessageContent(message.text)}
+      <div className={`message-bubble ${message.error ? 'error-bubble' : ''}`}>
+        {message.error ? (
+          <div className="error-message-content">
+            <span className="error-text">⚠️ {message.error}</span>
+            <button className="retry-btn" onClick={() => onRetry(message.id)}>
+              Retry
+            </button>
+          </div>
+        ) : !message.text ? (
+          <div className="typing-indicator" style={{ display: 'flex', alignItems: 'center', minHeight: '20px' }}>
+            <div className="typing-dot" />
+            <div className="typing-dot" />
+            <div className="typing-dot" />
+          </div>
+        ) : (
+          renderMessageContent(message.text)
+        )}
         <div className="message-meta">
           <span>{new Date(message.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+          {!message.error && message.text && (
+            <button className="copy-msg-btn" onClick={handleCopyMessage} title="Copy message content">
+              {copied ? (
+                <>
+                  <Check size={11} />
+                  <span>Copied!</span>
+                </>
+              ) : (
+                <>
+                  <Copy size={11} />
+                  <span>Copy</span>
+                </>
+              )}
+            </button>
+          )}
         </div>
       </div>
     </div>
