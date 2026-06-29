@@ -23,6 +23,8 @@ export default function App() {
   const [searchQuery, setSearchQuery] = useState('');
   const [sidebarOpen, setSidebarOpen] = useState(false);
   
+  const [simulateError, setSimulateError] = useState(false);
+  
   const cancelStreamRef = useRef(null);
 
   // Check active session on mount
@@ -173,6 +175,89 @@ export default function App() {
     }
   };
 
+  const handleRetry = (failedMsgId) => {
+    const currentActiveId = activeId;
+    const current = conversations.find(c => c.id === currentActiveId);
+    if (!current) return;
+    
+    const failedMsgIndex = current.messages.findIndex(m => m.id === failedMsgId);
+    if (failedMsgIndex === -1) return;
+    
+    const userMsg = current.messages[failedMsgIndex - 1];
+    const textToRetry = userMsg ? userMsg.text : "";
+    
+    // Remove the failed message from active conversations
+    setConversations(prev =>
+      prev.map(c => {
+        if (c.id === currentActiveId) {
+          return {
+            ...c,
+            messages: c.messages.slice(0, failedMsgIndex)
+          };
+        }
+        return c;
+      })
+    );
+    
+    setIsTyping(true);
+    
+    const assistantMsgId = `msg_${Date.now()}_assistant`;
+    const assistantMsgPlaceholder = {
+      id: assistantMsgId,
+      sender: 'assistant',
+      text: '',
+      timestamp: Date.now()
+    };
+
+    setConversations(prev =>
+      prev.map(c =>
+        c.id === currentActiveId
+          ? { ...c, messages: [...c.messages, assistantMsgPlaceholder] }
+          : c
+      )
+    );
+
+    cancelStreamRef.current = streamAiResponse(
+      personaId,
+      textToRetry,
+      (chunkText) => {
+        setConversations(prev =>
+          prev.map(c => {
+            if (c.id === currentActiveId) {
+              return {
+                ...c,
+                messages: c.messages.map(m =>
+                  m.id === assistantMsgId ? { ...m, text: chunkText } : m
+                )
+              };
+            }
+            return c;
+          })
+        );
+      },
+      () => {
+        setIsTyping(false);
+      },
+      (err) => {
+        setIsTyping(false);
+        setConversations(prev =>
+          prev.map(c => {
+            if (c.id === currentActiveId) {
+              return {
+                ...c,
+                messages: c.messages.map(m =>
+                  m.id === assistantMsgId ? { ...m, error: err.message } : m
+                )
+              };
+            }
+            return c;
+          })
+        );
+      },
+      simulateError
+    );
+  };
+
   const handleSendMessage = (text) => {
     let currentActiveId = activeId;
     let currentConversations = [...conversations];
@@ -261,7 +346,25 @@ export default function App() {
       // Completion Callback
       () => {
         setIsTyping(false);
-      }
+      },
+      // Error Callback
+      (err) => {
+        setIsTyping(false);
+        setConversations(prev =>
+          prev.map(c => {
+            if (c.id === currentActiveId) {
+              return {
+                ...c,
+                messages: c.messages.map(m =>
+                  m.id === assistantMsgId ? { ...m, error: err.message } : m
+                )
+              };
+            }
+            return c;
+          })
+        );
+      },
+      simulateError
     );
   };
 
@@ -312,6 +415,10 @@ export default function App() {
         setInput={setInput}
         onSendMessage={handleSendMessage}
         onSidebarToggle={() => setSidebarOpen(!sidebarOpen)}
+        simulateError={simulateError}
+        setSimulateError={setSimulateError}
+        onRetry={handleRetry}
+        onNewChat={handleNewConversation}
       />
     </div>
   );
