@@ -126,14 +126,21 @@ export default function Sidebar({
           {showSettings && (
             <div className="settings-panel">
               <label className="settings-label">
-                <div style={{ display: 'flex', alignItems: 'center', gap: '4px', marginBottom: '2px' }}>
-                  <Key size={12} />
-                  <span>Gemini API Key</span>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                    <Key size={12} />
+                    <span>Gemini API Key</span>
+                  </div>
+                  {import.meta.env.VITE_GEMINI_API_KEY && !apiKey && (
+                    <span style={{ color: 'var(--color-primary)', fontSize: '0.65rem', fontWeight: 600 }}>
+                      ✓ Active (Env)
+                    </span>
+                  )}
                 </div>
                 <div className="settings-input-group">
                   <input
                     type={showKey ? 'text' : 'password'}
-                    placeholder="Enter API Key..."
+                    placeholder={import.meta.env.VITE_GEMINI_API_KEY ? "Loaded from environment..." : "Enter API Key..."}
                     className="settings-input"
                     value={apiKey}
                     onChange={handleApiKeyChange}

@@ -555,7 +555,7 @@ export function streamAiResponse(personaId, userPrompt, onChunk, onComplete, onE
     return () => clearTimeout(timeoutId);
   }
 
-  const apiKey = localStorage.getItem('chatx_gemini_api_key');
+  const apiKey = localStorage.getItem('chatx_gemini_api_key') || import.meta.env.VITE_GEMINI_API_KEY;
   let intervalId = null;
   let controller = null;
 
