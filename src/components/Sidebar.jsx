@@ -1,5 +1,5 @@
-import React from 'react';
-import { Plus, Search, Trash2, MessageSquareCode, X, User, LogOut } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Plus, Search, Trash2, MessageSquareCode, X, User, LogOut, Settings, Key, Eye, EyeOff, ChevronDown, ChevronUp } from 'lucide-react';
 
 export default function Sidebar({
   currentUser,
@@ -14,6 +14,26 @@ export default function Sidebar({
   isOpen,
   setIsOpen
 }) {
+  const [showSettings, setShowSettings] = useState(false);
+  const [apiKey, setApiKey] = useState('');
+  const [showKey, setShowKey] = useState(false);
+
+  // Load API key from localStorage on mount
+  useEffect(() => {
+    const savedKey = localStorage.getItem('chatx_gemini_api_key') || '';
+    setApiKey(savedKey);
+  }, []);
+
+  const handleApiKeyChange = (e) => {
+    const val = e.target.value;
+    setApiKey(val);
+    if (val.trim()) {
+      localStorage.setItem('chatx_gemini_api_key', val.trim());
+    } else {
+      localStorage.removeItem('chatx_gemini_api_key');
+    }
+  };
+
   const filtered = conversations.filter(c =>
     c.title.toLowerCase().includes(searchQuery.toLowerCase())
   );
@@ -86,6 +106,55 @@ export default function Sidebar({
                 </div>
               </div>
             ))
+          )}
+        </div>
+
+        {/* Gemini API Key Settings Panel */}
+        <div className="sidebar-settings">
+          <button 
+            className="settings-toggle-btn" 
+            onClick={() => setShowSettings(!showSettings)}
+            title="Toggle API Settings"
+          >
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <Settings size={14} />
+              <span>Gemini Settings</span>
+            </div>
+            {showSettings ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+          </button>
+
+          {showSettings && (
+            <div className="settings-panel">
+              <label className="settings-label">
+                <div style={{ display: 'flex', alignItems: 'center', gap: '4px', marginBottom: '2px' }}>
+                  <Key size={12} />
+                  <span>Gemini API Key</span>
+                </div>
+                <div className="settings-input-group">
+                  <input
+                    type={showKey ? 'text' : 'password'}
+                    placeholder="Enter API Key..."
+                    className="settings-input"
+                    value={apiKey}
+                    onChange={handleApiKeyChange}
+                  />
+                  <button 
+                    type="button"
+                    className="settings-key-btn" 
+                    onClick={() => setShowKey(!showKey)}
+                    title={showKey ? "Hide Key" : "Show Key"}
+                  >
+                    {showKey ? <EyeOff size={12} /> : <Eye size={12} />}
+                  </button>
+                </div>
+              </label>
+              <div className="settings-info">
+                <span>Unlock live answers for Athena. Get a free key at </span>
+                <a href="https://aistudio.google.com/" target="_blank" rel="noopener noreferrer">
+                  Google AI Studio
+                </a>.
+              </div>
+            </div>
           )}
         </div>
 
