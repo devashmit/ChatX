@@ -21,19 +21,56 @@ export default function MessageItem({ message, personaId, onRetry }) {
 
   const parseInline = (text) => {
     if (!text) return '';
-    // Parse inline code: `code`
-    const codeParts = text.split(/`([^`]+)`/g);
-    return codeParts.map((subPart, index) => {
-      if (index % 2 === 1) {
-        return <code key={index}>{subPart}</code>;
+    
+    // Parse links: [text](url)
+    const linkRegex = /\[([^\]]+)\]\(([^)]+)\)/g;
+    const parts = [];
+    let lastIndex = 0;
+    let match;
+    
+    while ((match = linkRegex.exec(text)) !== null) {
+      const matchIndex = match.index;
+      if (matchIndex > lastIndex) {
+        parts.push(text.substring(lastIndex, matchIndex));
       }
-      // Parse bold: **text**
-      const boldParts = subPart.split(/\*\*([^*]+)\*\*/g);
-      return boldParts.map((boldPart, boldIndex) => {
-        if (boldIndex % 2 === 1) {
-          return <strong key={boldIndex}>{boldPart}</strong>;
+      const linkText = match[1];
+      const linkUrl = match[2];
+      parts.push(
+        <a 
+          key={matchIndex} 
+          href={linkUrl} 
+          target="_blank" 
+          rel="noopener noreferrer" 
+          style={{ color: 'var(--color-primary)', textDecoration: 'underline' }}
+        >
+          {linkText}
+        </a>
+      );
+      lastIndex = linkRegex.lastIndex;
+    }
+    
+    if (lastIndex < text.length) {
+      parts.push(text.substring(lastIndex));
+    }
+
+    return parts.map((part, index) => {
+      if (React.isValidElement(part)) {
+        return part;
+      }
+      
+      const codeParts = part.split(/`([^`]+)`/g);
+      return codeParts.map((subPart, codeIdx) => {
+        if (codeIdx % 2 === 1) {
+          return <code key={`${index}-${codeIdx}`}>{subPart}</code>;
         }
-        return boldPart;
+        
+        const boldParts = subPart.split(/\*\*([^*]+)\*\*/g);
+        return boldParts.map((boldPart, boldIdx) => {
+          if (boldIdx % 2 === 1) {
+            return <strong key={`${index}-${codeIdx}-${boldIdx}`}>{boldPart}</strong>;
+          }
+          return boldPart;
+        });
       });
     });
   };
