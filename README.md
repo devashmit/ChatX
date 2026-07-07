@@ -1,4 +1,4 @@
-# ChatX 🔷🌸🌿
+# ChatX — The Multi-Persona Workspace
 
 ChatX is a premium, professional AI companion workspace featuring three specialized personas: Athena (Software Architect), Aurora (Creative Writer), and Silas (Calm Mentor). It delivers a sleek, minimalist zinc-themed user interface, fluid micro-animations, and a highly responsive, custom-engineered client-side interaction engine.
 
