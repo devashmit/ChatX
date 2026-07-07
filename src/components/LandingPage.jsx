@@ -1,892 +1,953 @@
-import React, { useEffect } from 'react';
-import { Lock, History, Users, Calculator, Brain, Zap, ArrowRight } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Lock, History, Users, Calculator, Brain, Zap, ArrowRight, MessageSquare, Terminal, Sparkles, Compass, Check, ChevronDown, Cpu, Shield, HelpCircle, Code } from 'lucide-react';
+
+const FAQ_ITEMS = [
+  {
+    question: "Is ChatX free to use?",
+    answer: "Yes. ChatX has a robust Free tier that lets you utilize standard personas offline and connect your own API keys. We also offer a Plus tier for higher token limits and priority features."
+  },
+  {
+    question: "How is my conversation data stored?",
+    answer: "Your privacy is our core value. All conversations are stored locally in your browser cache/storage and never sent to our servers. Only the prompt is securely forwarded to the AI model."
+  },
+  {
+    question: "Can I connect my own custom models?",
+    answer: "Absolutely. In the Settings drawer, you can input your Gemini or custom API keys to power your conversations with your own dedicated endpoints."
+  },
+  {
+    question: "What are the specialized companions?",
+    answer: "We offer pre-configured personas like Athena (the Software Architect), Aurora (the Creative Writer), and Silas (the Calm Mentor) to help you get optimized responses without prompting from scratch."
+  }
+];
+
+const PREVIEW_PROMPTS = {
+  athena: {
+    query: "Explain closures and write an optimized React debounce hook.",
+    response: "A closure is a function that remembers its outer variables even after the outer function has returned.\n\nHere is a clean debounce hook:\n\n```javascript\nfunction useDebounce(value, delay) {\n  const [debouncedValue, setDebouncedValue] = useState(value);\n  useEffect(() => {\n    const handler = setTimeout(() => setDebouncedValue(value), delay);\n    return () => clearTimeout(handler);\n  }, [value, delay]);\n  return debouncedValue;\n}\n```"
+  },
+  aurora: {
+    query: "Compose a short poem about a bioluminescent cyberpunk forest.",
+    response: "Electric roots drink glowing dew,\nWhere neon moss and circuitry grew.\nThe chrome leaves whisper ancient tales,\nOn carbon-fiber wind that sails.\nA sanctuary of synthetic light,\nBlooming soft in the endless night."
+  },
+  silas: {
+    query: "Give me some quick, practical advice to tackle developer burnout.",
+    response: "1. **Strict Off-Hours**: Disconnect from Slack/workspace at 6 PM. No exceptions.\n2. **The 50/10 Rule**: Work intensely for 50 minutes, then walk away from screens for 10 minutes.\n3. **Decouple Identity**: Remember you are a person who writes code, not just a coder."
+  }
+};
 
 export default function LandingPage({ onNavigateAuth }) {
+  const [activeFaq, setActiveFaq] = useState(null);
+  const [previewPersona, setPreviewPersona] = useState('athena');
+  const [previewText, setPreviewText] = useState('');
+  const [previewStreaming, setPreviewStreaming] = useState(false);
+  const [previewHistory, setPreviewHistory] = useState([
+    { sender: 'assistant', text: "Hello! Athena here. Ready to debug, design, or discuss system architecture. What are we building today?" }
+  ]);
+
+  // Run simulated streaming when preview persona changes
+  const runPreviewSimulation = (personaId) => {
+    setPreviewPersona(personaId);
+    setPreviewStreaming(true);
+    setPreviewText('');
+    
+    const queryData = PREVIEW_PROMPTS[personaId];
+    setPreviewHistory([
+      { sender: 'user', text: queryData.query },
+      { sender: 'assistant', text: '' }
+    ]);
+
+    let fullText = queryData.response;
+    let index = 0;
+    
+    const timer = setInterval(() => {
+      if (index < fullText.length) {
+        setPreviewText(prev => prev + fullText.charAt(index));
+        index++;
+      } else {
+        clearInterval(timer);
+        setPreviewStreaming(false);
+      }
+    }, 15);
+
+    return timer;
+  };
+
   useEffect(() => {
-    // Load typography from Google Fonts
-    const linkId = 'editorial-fonts';
-    if (!document.getElementById(linkId)) {
-      const link = document.createElement('link');
-      link.id = linkId;
-      link.rel = 'stylesheet';
-      link.href = 'https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Outfit:wght@300;400;500;600;700&display=swap';
-      document.head.appendChild(link);
-    }
+    // Initial run
+    const timer = runPreviewSimulation('athena');
+    return () => clearInterval(timer);
   }, []);
+
+  // Update assistant message text in preview history
+  useEffect(() => {
+    setPreviewHistory(prev => {
+      const copy = [...prev];
+      if (copy.length > 1 && copy[1].sender === 'assistant') {
+        copy[1].text = previewText;
+      }
+      return copy;
+    });
+  }, [previewText]);
 
   return (
     <div className="editorial-landing">
-      <div className="background-glows">
-        <div className="glow-1" />
-        <div className="glow-2" />
-      </div>
-      {/* Self-contained CSS */}
+      {/* Self-contained style block for Landing Page specifics */}
       <style>{`
-        /* Reset and Base Styles */
         .editorial-landing {
-          height: 100vh;
+          min-height: 100vh;
           width: 100vw;
-          background-color: #000000;
-          color: #F8F8FF;
+          background-color: #09090b;
+          color: #f4f4f5;
           font-family: 'Outfit', sans-serif;
-          margin: 0;
-          padding: 0;
-          box-sizing: border-box;
           overflow-y: auto;
           overflow-x: hidden;
           display: flex;
           flex-direction: column;
-          align-items: center;
           position: relative;
         }
 
-        .editorial-landing * {
-          box-sizing: border-box;
-        }
-
-        /* Ambient Background Glows */
-        .background-glows {
-          position: absolute;
-          top: 0;
-          left: 0;
-          right: 0;
-          bottom: 0;
-          overflow: hidden;
-          z-index: 0;
-          pointer-events: none;
-        }
-
-        .glow-1 {
-          position: absolute;
-          top: -10%;
-          left: 10%;
-          width: 700px;
-          height: 700px;
-          border-radius: 50%;
-          background: radial-gradient(circle, rgba(57, 255, 20, 0.05) 0%, rgba(0,0,0,0) 80%);
-          filter: blur(120px);
-          animation: slowGlowPulse 18s infinite ease-in-out;
-        }
-
-        .glow-2 {
-          position: absolute;
-          bottom: 10%;
-          right: 5%;
-          width: 800px;
-          height: 800px;
-          border-radius: 50%;
-          background: radial-gradient(circle, rgba(176, 196, 222, 0.05) 0%, rgba(0,0,0,0) 80%);
-          filter: blur(140px);
-          animation: slowGlowPulse 24s infinite ease-in-out alternate;
-        }
-
-        @keyframes slowGlowPulse {
-          0%, 100% { transform: scale(1) translate(0, 0); opacity: 0.7; }
-          50% { transform: scale(1.18) translate(30px, -20px); opacity: 1; }
-        }
-
-        /* Entry Transitions */
-        @keyframes fadeUpIn {
-          from {
-            opacity: 0;
-            transform: translateY(20px);
-          }
-          to {
-            opacity: 1;
-            transform: translateY(0);
-          }
-        }
-
-        /* Typography Helper Classes */
-        .serif-text {
-          font-family: 'Space Grotesk', sans-serif;
-          font-weight: 600;
-        }
-        
-        .serif-italic {
-          font-family: 'Space Grotesk', sans-serif;
-          font-weight: 700;
-          font-style: italic;
-          color: #39FF14;
-          text-shadow: 0 0 10px rgba(57, 255, 20, 0.35);
-        }
-
-        .sans-label {
-          font-family: 'Space Grotesk', sans-serif;
-          font-size: 11px;
-          font-weight: 600;
-          text-transform: uppercase;
-          letter-spacing: 0.15em;
-        }
-
-        /* Nav Section */
-        .editorial-nav {
-          width: 100%;
-          border-bottom: 1px solid rgba(176, 196, 222, 0.15);
-          background-color: rgba(0, 0, 0, 0.85);
-          backdrop-filter: blur(12px);
+        .landing-header {
           position: sticky;
           top: 0;
           z-index: 100;
-          animation: fadeUpIn 0.8s cubic-bezier(0.16, 1, 0.3, 1) both;
+          background: rgba(9, 9, 11, 0.8);
+          backdrop-filter: blur(12px);
+          border-bottom: 1px solid rgba(255, 255, 255, 0.05);
         }
 
-        .nav-content {
-          max-width: 900px;
+        .landing-nav {
+          max-width: 1200px;
           margin: 0 auto;
-          padding: 1.25rem 1.5rem;
+          padding: 16px 24px;
           display: flex;
           justify-content: space-between;
           align-items: center;
-          gap: 1rem;
         }
 
-        .nav-logo {
-          font-family: 'Space Grotesk', sans-serif;
-          font-size: 20px;
-          font-weight: 700;
-          text-decoration: none;
-          color: #F8F8FF;
-          letter-spacing: -0.03em;
-        }
-
-        .nav-logo span {
-          color: #39FF14;
-          text-shadow: 0 0 8px rgba(57, 255, 20, 0.6);
-        }
-
-        .nav-middle {
-          font-family: 'Space Grotesk', sans-serif;
-          font-size: 11px;
-          text-transform: uppercase;
-          color: #B0C4DE;
-          letter-spacing: 0.12em;
-          font-weight: 500;
-          display: none;
-        }
-
-        @media (min-width: 640px) {
-          .nav-middle {
-            display: block;
-          }
-        }
-
-        .nav-actions {
+        .logo-group {
           display: flex;
-          gap: 0.75rem;
           align-items: center;
-        }
-
-        /* Buttons */
-        .btn-ghost {
-          background: transparent;
-          border: 1px solid rgba(176, 196, 222, 0.3);
-          color: #B0C4DE;
-          padding: 0.5rem 1rem;
+          gap: 10px;
           font-family: 'Space Grotesk', sans-serif;
-          font-size: 12px;
-          font-weight: 600;
-          border-radius: 6px;
-          cursor: pointer;
-          letter-spacing: 0.04em;
-          transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
-        }
-
-        .btn-ghost:hover {
-          border-color: #39FF14;
-          color: #39FF14;
-          box-shadow: 0 0 12px rgba(57, 255, 20, 0.3);
-          transform: translateY(-1px);
-        }
-
-        .btn-ink {
-          background: #39FF14;
-          border: none;
-          color: #000000;
-          padding: 0.5rem 1rem;
-          font-family: 'Space Grotesk', sans-serif;
-          font-size: 12px;
           font-weight: 700;
-          border-radius: 6px;
+          font-size: 1.25rem;
+          color: #ffffff;
+        }
+
+        .nav-links {
+          display: flex;
+          gap: 24px;
+        }
+
+        .nav-link {
+          color: #a1a1aa;
+          text-decoration: none;
+          font-size: 0.875rem;
+          font-weight: 500;
+          transition: color 0.2s;
+        }
+
+        .nav-link:hover {
+          color: #ffffff;
+        }
+
+        .btn-sign-in {
+          background: #ffffff;
+          color: #09090b;
+          border: none;
+          padding: 8px 16px;
+          border-radius: 8px;
+          font-weight: 500;
+          font-size: 0.875rem;
           cursor: pointer;
-          letter-spacing: 0.04em;
-          transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
-          text-transform: uppercase;
+          transition: opacity 0.2s;
         }
 
-        .btn-ink:hover {
-          background-color: #32e010;
-          box-shadow: 0 0 15px rgba(57, 255, 20, 0.6);
-          transform: translateY(-1px);
-        }
-
-        /* Container Limit helper */
-        .editorial-section {
-          max-width: 900px;
-          width: 100%;
-          margin: 0 auto;
-          padding: 0 1.5rem;
-          position: relative;
-          z-index: 1;
+        .btn-sign-in:hover {
+          opacity: 0.9;
         }
 
         /* Hero Section */
         .hero-section {
-          padding-top: 5rem;
-          padding-bottom: 3.5rem;
-          animation: fadeUpIn 1s cubic-bezier(0.16, 1, 0.3, 1) both;
-          animation-delay: 0.1s;
-        }
-
-        .hero-issue-line {
+          max-width: 1200px;
+          margin: 0 auto;
+          padding: 80px 24px 60px 24px;
+          text-align: center;
           display: flex;
+          flex-direction: column;
           align-items: center;
-          justify-content: space-between;
-          color: #B0C4DE;
-          margin-bottom: 2rem;
-          gap: 1rem;
         }
 
-        .hero-issue-line hr {
-          flex: 1;
-          border: none;
-          border-top: 1px solid rgba(176, 196, 222, 0.15);
-          margin: 0;
+        .badge-hero {
+          background: rgba(255, 255, 255, 0.03);
+          border: 1px solid rgba(255, 255, 255, 0.08);
+          color: #a1a1aa;
+          padding: 6px 14px;
+          border-radius: 99px;
+          font-size: 0.75rem;
+          font-weight: 500;
+          letter-spacing: 0.02em;
+          margin-bottom: 24px;
         }
 
-        .hero-h1 {
+        .hero-title {
           font-family: 'Space Grotesk', sans-serif;
-          font-size: 58px;
+          font-size: 3.5rem;
           font-weight: 700;
-          line-height: 1.08;
+          line-height: 1.15;
           letter-spacing: -0.03em;
-          color: #F8F8FF;
-          margin: 0 0 3rem 0;
+          color: #ffffff;
           max-width: 800px;
+          margin-bottom: 20px;
         }
 
-        .hero-body {
-          display: grid;
-          grid-template-columns: 1fr;
-          gap: 3rem;
-          align-items: start;
-        }
-
-        @media (min-width: 768px) {
-          .hero-body {
-            grid-template-columns: 1.2fr 0.8fr;
-          }
+        .hero-title em {
+          font-style: normal;
+          color: #a1a1aa;
         }
 
         .hero-subtitle {
-          font-family: 'Outfit', sans-serif;
-          font-size: 16px;
-          line-height: 1.8;
-          color: #B0C4DE;
-          font-weight: 300;
-          margin: 0;
+          font-size: 1.15rem;
+          color: #a1a1aa;
+          line-height: 1.6;
+          max-width: 600px;
+          margin-bottom: 32px;
         }
 
-        .hero-sidebar {
+        .hero-ctas {
+          display: flex;
+          gap: 16px;
+          margin-bottom: 64px;
+        }
+
+        .btn-primary {
+          background: #ffffff;
+          color: #09090b;
+          border: none;
+          padding: 12px 24px;
+          border-radius: 8px;
+          font-weight: 600;
+          font-size: 0.95rem;
+          cursor: pointer;
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          transition: transform 0.1s;
+        }
+
+        .btn-primary:active {
+          transform: scale(0.98);
+        }
+
+        .btn-secondary {
+          background: transparent;
+          color: #ffffff;
+          border: 1px solid rgba(255, 255, 255, 0.15);
+          padding: 12px 24px;
+          border-radius: 8px;
+          font-weight: 600;
+          font-size: 0.95rem;
+          cursor: pointer;
+          transition: background 0.2s;
+        }
+
+        .btn-secondary:hover {
+          background: rgba(255, 255, 255, 0.05);
+        }
+
+        /* Interactive AI Preview */
+        .preview-container {
+          width: 100%;
+          max-width: 840px;
+          background: #0c0c0e;
+          border: 1px solid rgba(255, 255, 255, 0.08);
+          border-radius: 12px;
+          box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
+          overflow: hidden;
+          text-align: left;
+          margin-bottom: 80px;
+        }
+
+        .preview-header {
+          background: #121215;
+          padding: 12px 20px;
+          border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+        }
+
+        .preview-dots {
+          display: flex;
+          gap: 6px;
+        }
+
+        .preview-dot {
+          width: 8px;
+          height: 8px;
+          border-radius: 50%;
+          background: rgba(255, 255, 255, 0.2);
+        }
+
+        .preview-title {
+          font-size: 0.75rem;
+          font-family: var(--font-mono);
+          color: #a1a1aa;
+        }
+
+        .preview-tabs {
+          display: flex;
+          background: #111113;
+          border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+          padding: 6px 12px;
+          gap: 8px;
+        }
+
+        .preview-tab-btn {
+          background: transparent;
+          border: none;
+          color: #a1a1aa;
+          padding: 6px 12px;
+          font-size: 0.78rem;
+          font-weight: 500;
+          cursor: pointer;
+          border-radius: 6px;
+          display: flex;
+          align-items: center;
+          gap: 6px;
+          transition: all 0.2s;
+        }
+
+        .preview-tab-btn:hover {
+          background: rgba(255, 255, 255, 0.03);
+          color: #ffffff;
+        }
+
+        .preview-tab-btn.active {
+          background: rgba(255, 255, 255, 0.08);
+          color: #ffffff;
+        }
+
+        .preview-content {
+          padding: 24px;
+          min-height: 280px;
           display: flex;
           flex-direction: column;
-          gap: 1.5rem;
+          gap: 20px;
         }
 
-        .btn-primary-cta {
-          background: #39FF14;
-          border: none;
-          color: #000000;
-          padding: 0.85rem 1.25rem;
-          font-family: 'Space Grotesk', sans-serif;
-          font-size: 13px;
-          font-weight: 700;
-          border-radius: 6px;
-          cursor: pointer;
+        .preview-bubble {
+          display: flex;
+          gap: 12px;
+        }
+
+        .preview-avatar {
+          width: 24px;
+          height: 24px;
+          border-radius: 50%;
           display: flex;
           align-items: center;
-          justify-content: space-between;
-          transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
-          text-transform: uppercase;
-          letter-spacing: 0.05em;
+          justify-content: center;
+          font-size: 0.7rem;
+          color: #ffffff;
         }
 
-        .btn-primary-cta:hover {
-          background-color: #32e010;
-          box-shadow: 0 0 20px rgba(57, 255, 20, 0.7);
-          transform: translateY(-2px);
+        .preview-text {
+          flex: 1;
+          font-size: 0.88rem;
+          line-height: 1.5;
+          color: #e4e4e7;
+          white-space: pre-wrap;
         }
 
-        .btn-primary-cta svg {
-          transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
-        }
-
-        .btn-primary-cta:hover svg {
-          transform: translateX(5px);
-        }
-
-        .btn-secondary-cta {
-          background: transparent;
-          border: 1px solid rgba(176, 196, 222, 0.3);
-          color: #F8F8FF;
-          padding: 0.85rem 1.25rem;
-          font-family: 'Space Grotesk', sans-serif;
-          font-size: 13px;
-          font-weight: 600;
+        .preview-text pre {
+          background: #060608;
+          padding: 12px;
           border-radius: 6px;
-          cursor: pointer;
-          display: flex;
-          align-items: center;
-          justify-content: space-between;
-          transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+          border: 1px solid rgba(255, 255, 255, 0.05);
+          margin-top: 8px;
+          overflow-x: auto;
         }
 
-        .btn-secondary-cta:hover {
-          border-color: #39FF14;
-          color: #39FF14;
-          box-shadow: 0 0 15px rgba(57, 255, 20, 0.3);
-          transform: translateY(-2px);
+        .preview-text code {
+          font-family: var(--font-mono);
+          font-size: 0.8rem;
         }
 
-        .btn-secondary-cta svg {
-          transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
-        }
-
-        .btn-secondary-cta:hover svg {
-          transform: translateX(5px);
-        }
-
-        .stat-card {
-          background: rgba(8, 8, 10, 0.85);
-          border: 1px solid rgba(176, 196, 222, 0.15);
-          border-radius: 8px;
-          padding: 1.25rem;
-          text-align: left;
-          transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
-        }
-
-        .stat-card:hover {
-          transform: translateY(-2px);
-          border-color: rgba(57, 255, 20, 0.3);
-          box-shadow: 0 8px 25px -8px rgba(57, 255, 20, 0.2);
-        }
-
-        .stat-num {
-          font-family: 'Space Grotesk', sans-serif;
-          font-size: 36px;
-          font-weight: 700;
-          color: #39FF14;
-          line-height: 1;
-          margin-bottom: 0.5rem;
-          text-shadow: 0 0 8px rgba(57, 255, 20, 0.3);
-        }
-
-        .stat-label {
-          font-family: 'Outfit', sans-serif;
-          font-size: 12px;
-          color: #B0C4DE;
-          margin: 0;
-          line-height: 1.4;
-        }
-
-        /* Separator Rule */
-        .section-separator {
+        /* Features Section */
+        .grid-section {
+          max-width: 1200px;
+          margin: 0 auto;
+          padding: 60px 24px;
           width: 100%;
-          border: none;
-          border-top: 1px solid rgba(176, 196, 222, 0.15);
-          margin: 0;
-          position: relative;
-          z-index: 1;
-        }
-
-        /* Persona Section */
-        .persona-section {
-          padding: 5rem 1.5rem;
-          animation: fadeUpIn 1s cubic-bezier(0.16, 1, 0.3, 1) both;
-          animation-delay: 0.2s;
         }
 
         .section-header {
-          display: flex;
-          flex-direction: column;
-          align-items: flex-start;
-          gap: 0.5rem;
-          margin-bottom: 3rem;
+          text-align: center;
+          margin-bottom: 48px;
         }
 
-        @media (min-width: 640px) {
-          .section-header {
-            flex-direction: row;
-            align-items: baseline;
-            gap: 1.5rem;
-          }
-        }
-
-        .section-header-label {
-          color: #39FF14;
-          text-shadow: 0 0 5px rgba(57, 255, 20, 0.2);
-        }
-
-        .section-header-title {
+        .section-tag {
           font-family: 'Space Grotesk', sans-serif;
-          font-size: 28px;
-          font-weight: 700;
-          color: #F8F8FF;
-          margin: 0;
-        }
-
-        .personas-grid {
-          display: grid;
-          grid-template-columns: 1fr;
-          background-color: rgba(176, 196, 222, 0.15);
-          gap: 1px;
-          border: 1px solid rgba(176, 196, 222, 0.15);
-          border-radius: 8px;
-          overflow: hidden;
-          margin-bottom: 3rem;
-        }
-
-        @media (min-width: 768px) {
-          .personas-grid {
-            grid-template-columns: repeat(3, 1fr);
-          }
-        }
-
-        .persona-col {
-          background-color: #08080a;
-          padding: 2.5rem 2rem;
-          display: flex;
-          flex-direction: column;
-          transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
-        }
-
-        .persona-col:hover {
-          background-color: #0f0f13;
-          transform: translateY(-4px);
-          box-shadow: inset 0 0 25px rgba(57, 255, 20, 0.06), 0 12px 30px -10px rgba(57, 255, 20, 0.15);
-        }
-
-        .persona-num {
-          font-family: 'Space Grotesk', sans-serif;
-          font-size: 12px;
-          font-weight: 700;
-          color: #627284;
-          margin-bottom: 1.5rem;
-        }
-
-        .persona-name {
-          font-family: 'Space Grotesk', sans-serif;
-          font-size: 24px;
-          font-weight: 700;
-          color: #F8F8FF;
-          margin: 0 0 0.25rem 0;
-        }
-
-        .persona-role {
-          font-family: 'Space Grotesk', sans-serif;
-          font-size: 11px;
+          font-size: 0.72rem;
           font-weight: 600;
-          color: #39FF14;
           text-transform: uppercase;
-          letter-spacing: 0.12em;
-          margin-bottom: 1.5rem;
+          color: #a1a1aa;
+          letter-spacing: 0.1em;
+          display: inline-block;
+          margin-bottom: 12px;
         }
 
-        .persona-divider {
-          width: 100%;
-          border: none;
-          border-top: 1px solid rgba(176, 196, 222, 0.15);
-          margin: 0 0 1.5rem 0;
-        }
-
-        .persona-desc {
-          font-family: 'Outfit', sans-serif;
-          font-size: 14px;
-          line-height: 1.7;
-          color: #B0C4DE;
-          margin: 0 0 2rem 0;
-          flex: 1;
-        }
-
-        .persona-link {
+        .section-title {
           font-family: 'Space Grotesk', sans-serif;
-          font-size: 11px;
+          font-size: 2.25rem;
           font-weight: 700;
-          text-transform: uppercase;
-          letter-spacing: 0.12em;
-          color: #39FF14;
-          text-decoration: none;
-          display: inline-flex;
-          align-items: center;
-          align-self: flex-start;
-          border-bottom: 1px solid #39FF14;
-          padding-bottom: 2px;
-          transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
-        }
-
-        .persona-link:hover {
-          opacity: 0.85;
-          letter-spacing: 0.16em;
-          padding-left: 6px;
-        }
-
-        /* Pull Quote */
-        .pull-quote {
-          background-color: rgba(57, 255, 20, 0.04);
-          border-left: 3px solid #39FF14;
-          border-radius: 0 8px 8px 0;
-          padding: 2rem;
-          text-align: left;
-          transition: all 0.3s ease;
-        }
-
-        .pull-quote:hover {
-          background-color: rgba(57, 255, 20, 0.06);
-          box-shadow: 0 5px 15px rgba(57, 255, 20, 0.05);
-        }
-
-        .pull-quote-text {
-          font-family: 'Space Grotesk', sans-serif;
-          font-size: 16px;
-          font-weight: 500;
-          font-style: italic;
-          color: #F8F8FF;
-          line-height: 1.7;
-          margin: 0 0 1rem 0;
-        }
-
-        .pull-quote-attribution {
-          color: #B0C4DE;
-          margin: 0;
-        }
-
-        /* Dark Features Section */
-        .features-section-dark {
-          width: 100%;
-          background-color: #000000;
-          padding: 5rem 0;
-          position: relative;
-          z-index: 1;
-        }
-
-        .features-section-dark .section-header-label {
-          color: #39FF14;
-        }
-
-        .features-section-dark .section-header-title {
-          color: #F8F8FF;
+          color: #ffffff;
+          letter-spacing: -0.02em;
         }
 
         .features-grid {
           display: grid;
-          grid-template-columns: 1fr;
-          background-color: rgba(176, 196, 222, 0.15);
-          gap: 1px;
-          border: 1px solid rgba(176, 196, 222, 0.15);
+          grid-template-columns: repeat(3, 1fr);
+          gap: 24px;
+        }
+
+        .feature-card {
+          background: #0c0c0e;
+          border: 1px solid rgba(255, 255, 255, 0.05);
+          border-radius: 12px;
+          padding: 24px;
+          transition: border-color 0.2s;
+        }
+
+        .feature-card:hover {
+          border-color: rgba(255, 255, 255, 0.15);
+        }
+
+        .feature-icon-wrapper {
+          width: 36px;
+          height: 36px;
+          border-radius: 8px;
+          background: rgba(255, 255, 255, 0.03);
+          border: 1px solid rgba(255, 255, 255, 0.08);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          margin-bottom: 20px;
+          color: #ffffff;
+        }
+
+        .feature-card h3 {
+          font-size: 1.1rem;
+          font-weight: 600;
+          margin-bottom: 10px;
+          color: #ffffff;
+        }
+
+        .feature-card p {
+          font-size: 0.875rem;
+          color: #a1a1aa;
+          line-height: 1.5;
+        }
+
+        /* Models Showcase */
+        .models-grid {
+          display: grid;
+          grid-template-columns: repeat(4, 1fr);
+          gap: 16px;
+          margin-top: 10px;
+        }
+
+        .model-card {
+          background: #0c0c0e;
+          border: 1px solid rgba(255, 255, 255, 0.05);
+          padding: 20px;
+          border-radius: 10px;
+          display: flex;
+          align-items: center;
+          gap: 12px;
+        }
+
+        .model-icon {
+          color: #a1a1aa;
+        }
+
+        .model-name {
+          font-size: 0.9rem;
+          font-weight: 500;
+          color: #ffffff;
+        }
+
+        /* Pricing Section */
+        .pricing-grid {
+          display: grid;
+          grid-template-columns: repeat(3, 1fr);
+          gap: 24px;
+          max-width: 1000px;
+          margin: 0 auto;
+        }
+
+        .pricing-card {
+          background: #0c0c0e;
+          border: 1px solid rgba(255, 255, 255, 0.05);
+          border-radius: 12px;
+          padding: 32px 24px;
+          display: flex;
+          flex-direction: column;
+          position: relative;
+        }
+
+        .pricing-card.premium {
+          border-color: rgba(255, 255, 255, 0.25);
+          box-shadow: 0 8px 30px rgba(0, 0, 0, 0.3);
+        }
+
+        .pricing-badge {
+          position: absolute;
+          top: 16px;
+          right: 16px;
+          background: rgba(255, 255, 255, 0.08);
+          padding: 4px 10px;
+          border-radius: 99px;
+          font-size: 0.68rem;
+          font-weight: 600;
+          color: #ffffff;
+        }
+
+        .pricing-card h3 {
+          font-size: 1.2rem;
+          font-weight: 600;
+          margin-bottom: 8px;
+        }
+
+        .pricing-card .price {
+          font-size: 2rem;
+          font-family: 'Space Grotesk', sans-serif;
+          font-weight: 700;
+          margin: 16px 0;
+          color: #ffffff;
+        }
+
+        .pricing-card .price span {
+          font-size: 0.9rem;
+          font-weight: 400;
+          color: #a1a1aa;
+        }
+
+        .pricing-features {
+          list-style: none;
+          margin: 20px 0 32px 0;
+          display: flex;
+          flex-direction: column;
+          gap: 12px;
+          flex: 1;
+        }
+
+        .pricing-features li {
+          font-size: 0.85rem;
+          color: #a1a1aa;
+          display: flex;
+          align-items: center;
+          gap: 8px;
+        }
+
+        .pricing-btn {
+          width: 100%;
+          background: transparent;
+          border: 1px solid rgba(255, 255, 255, 0.15);
+          color: #ffffff;
+          padding: 10px;
+          border-radius: 8px;
+          font-weight: 600;
+          cursor: pointer;
+          transition: all 0.2s;
+        }
+
+        .pricing-btn:hover {
+          background: rgba(255, 255, 255, 0.05);
+        }
+
+        .pricing-card.premium .pricing-btn {
+          background: #ffffff;
+          color: #09090b;
+          border: none;
+        }
+
+        .pricing-card.premium .pricing-btn:hover {
+          opacity: 0.9;
+        }
+
+        /* FAQ Accordion */
+        .faq-list {
+          max-width: 760px;
+          margin: 0 auto;
+          display: flex;
+          flex-direction: column;
+          gap: 12px;
+        }
+
+        .faq-item {
+          background: #0c0c0e;
+          border: 1px solid rgba(255, 255, 255, 0.05);
           border-radius: 8px;
           overflow: hidden;
         }
 
-        @media (min-width: 640px) {
-          .features-grid {
-            grid-template-columns: repeat(2, 1fr);
-          }
-        }
-
-        @media (min-width: 768px) {
-          .features-grid {
-            grid-template-columns: repeat(3, 1fr);
-          }
-        }
-
-        .feature-cell {
-          background-color: #08080a;
-          padding: 2rem;
-          display: flex;
-          flex-direction: column;
-          gap: 1rem;
-          text-align: left;
-          transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
-        }
-
-        .feature-cell:hover {
-          background-color: #101014;
-          transform: translateY(-4px);
-          box-shadow: inset 0 0 20px rgba(57, 255, 20, 0.03), 0 10px 25px -10px rgba(57, 255, 20, 0.15);
-        }
-
-        .feature-cell-title {
-          font-family: 'Space Grotesk', sans-serif;
-          font-size: 14px;
-          font-weight: 600;
-          color: #F8F8FF;
-          margin: 0;
-        }
-
-        .feature-cell-body {
-          font-family: 'Outfit', sans-serif;
-          font-size: 13px;
-          color: #B0C4DE;
-          line-height: 1.7;
-          margin: 0;
-        }
-
-        /* Footer CTA Section */
-        .footer-cta-section {
-          padding: 5rem 1.5rem;
-          position: relative;
-          z-index: 1;
-        }
-
-        .footer-cta-layout {
-          display: grid;
-          grid-template-columns: 1fr;
-          gap: 3rem;
-          align-items: start;
-        }
-
-        @media (min-width: 768px) {
-          .footer-cta-layout {
-            grid-template-columns: 1.2fr 0.8fr;
-          }
-        }
-
-        .footer-cta-h2 {
-          font-family: 'Space Grotesk', sans-serif;
-          font-size: 38px;
-          font-weight: 700;
-          line-height: 1.2;
-          color: #F8F8FF;
-          margin: 0;
-        }
-
-        .footer-cta-sidebar {
-          display: flex;
-          flex-direction: column;
-          gap: 1.5rem;
-        }
-
-        .footer-cta-fineprint {
-          font-family: 'Outfit', sans-serif;
-          font-size: 12px;
-          color: #627284;
-          line-height: 1.6;
-          margin: 0;
-        }
-
-        /* Footer Bar */
-        .footer-bar {
+        .faq-trigger {
           width: 100%;
-          border-top: 1px solid rgba(176, 196, 222, 0.15);
-          background-color: #000000;
-          position: relative;
-          z-index: 1;
-        }
-
-        .footer-bar-content {
-          max-width: 900px;
-          margin: 0 auto;
-          padding: 1.5rem;
+          background: transparent;
+          border: none;
+          padding: 20px;
           display: flex;
           justify-content: space-between;
           align-items: center;
-          font-family: 'Space Grotesk', sans-serif;
-          font-size: 11px;
-          color: #627284;
-          letter-spacing: 0.06em;
+          color: #ffffff;
+          font-size: 0.95rem;
+          font-weight: 600;
+          cursor: pointer;
+          text-align: left;
+        }
+
+        .faq-answer {
+          padding: 0 20px 20px 20px;
+          font-size: 0.88rem;
+          color: #a1a1aa;
+          line-height: 1.5;
+          border-top: 1px solid rgba(255, 255, 255, 0.02);
+          animation: fadeUpIn 0.2s ease-in-out;
+        }
+
+        /* Footer */
+        .landing-footer {
+          border-top: 1px solid rgba(255, 255, 255, 0.05);
+          background: #070708;
+          padding: 48px 24px;
+          margin-top: 60px;
+        }
+
+        .footer-content {
+          max-width: 1200px;
+          margin: 0 auto;
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          flex-wrap: wrap;
+          gap: 24px;
+        }
+
+        .footer-links {
+          display: flex;
+          gap: 24px;
+        }
+
+        .footer-link {
+          color: #52525b;
+          text-decoration: none;
+          font-size: 0.8rem;
+          transition: color 0.2s;
+        }
+
+        .footer-link:hover {
+          color: #a1a1aa;
+        }
+
+        .footer-copyright {
+          font-size: 0.8rem;
+          color: #52525b;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+          .hero-title {
+            font-size: 2.2rem;
+          }
+
+          .features-grid, .pricing-grid {
+            grid-template-columns: 1fr;
+          }
+
+          .models-grid {
+            grid-template-columns: repeat(2, 1fr);
+          }
+
+          .nav-links {
+            display: none;
+          }
         }
       `}</style>
 
-      {/* 1. NAV */}
-      <nav className="editorial-nav">
-        <div className="nav-content">
-          <a href="#" className="nav-logo" onClick={(e) => { e.preventDefault(); }}>
-            Chat<span>X</span>
-          </a>
-          <div className="nav-middle">
-            The AI Companion
+      {/* Navigation */}
+      <header className="landing-header">
+        <nav className="landing-nav">
+          <div className="logo-group">
+            <MessageSquare size={22} />
+            <span>ChatX</span>
           </div>
-          <div className="nav-actions">
-            <button className="btn-ghost" onClick={onNavigateAuth}>Sign in</button>
-            <button className="btn-ink" onClick={onNavigateAuth}>Get started</button>
+          <div className="nav-links">
+            <a href="#features" className="nav-link">Features</a>
+            <a href="#models" className="nav-link">AI Models</a>
+            <a href="#pricing" className="nav-link">Pricing</a>
+            <a href="#faq" className="nav-link">FAQ</a>
           </div>
-        </div>
-      </nav>
+          <button className="btn-sign-in" onClick={onNavigateAuth}>Sign In</button>
+        </nav>
+      </header>
 
-      {/* 2. HERO */}
-      <section className="editorial-section hero-section">
-        <div className="hero-issue-line">
-          <span className="sans-label" style={{ color: 'var(--text-secondary)' }}>Vol. I -- No. 1</span>
-          <hr />
-          <span className="sans-label" style={{ color: 'var(--text-secondary)' }}>Est. 2025</span>
-        </div>
-        
-        <h1 className="hero-h1">
-          The AI that thinks the way <em className="serif-italic">you</em> do.
+      {/* Hero Section */}
+      <section className="hero-section">
+        <div className="badge-hero">Introducing ChatX Workspace</div>
+        <h1 className="hero-title">
+          Redefine how you <em>think</em> and <em>build</em> with AI.
         </h1>
+        <p className="hero-subtitle">
+          An elevated workspace that coordinates specialized AI companions for clean code, creative writing, and mental clarity. Fully private. Beautifully minimal.
+        </p>
+        <div className="hero-ctas">
+          <button className="btn-primary" onClick={onNavigateAuth}>
+            <span>Start Chatting</span>
+            <ArrowRight size={16} />
+          </button>
+          <a href="#features" style={{ textDecoration: 'none' }}>
+            <button className="btn-secondary">Explore Features</button>
+          </a>
+        </div>
 
-        <div className="hero-body">
-          <p className="hero-subtitle">
-            Three distinct companions. One secure workspace. Athena reasons, Aurora creates, Silas reflects -- each shaped for a different corner of your mind.
-          </p>
-          <div className="hero-sidebar">
-            <button className="btn-primary-cta" onClick={onNavigateAuth}>
-              <span>Begin your conversation</span>
-              <ArrowRight size={16} />
-            </button>
-            <button className="btn-secondary-cta" onClick={() => {
-              document.getElementById('companions-section')?.scrollIntoView({ behavior: 'smooth' });
-            }}>
-              <span>Explore the personas</span>
-              <ArrowRight size={16} />
-            </button>
-            <div className="stat-card">
-              <div className="stat-num">3</div>
-              <p className="stat-label">AI personas, 1 private workspace, unlimited threads</p>
+        {/* Interactive AI Preview */}
+        <div className="preview-container">
+          <div className="preview-header">
+            <div className="preview-dots">
+              <div className="preview-dot" />
+              <div className="preview-dot" />
+              <div className="preview-dot" />
             </div>
+            <div className="preview-title">interactive_preview.js</div>
+            <div style={{ width: '30px' }} />
+          </div>
+          <div className="preview-tabs">
+            <button 
+              className={`preview-tab-btn ${previewPersona === 'athena' ? 'active' : ''}`}
+              onClick={() => runPreviewSimulation('athena')}
+              disabled={previewStreaming}
+            >
+              <Terminal size={12} />
+              <span>Athena (Code)</span>
+            </button>
+            <button 
+              className={`preview-tab-btn ${previewPersona === 'aurora' ? 'active' : ''}`}
+              onClick={() => runPreviewSimulation('aurora')}
+              disabled={previewStreaming}
+            >
+              <Sparkles size={12} />
+              <span>Aurora (Creative)</span>
+            </button>
+            <button 
+              className={`preview-tab-btn ${previewPersona === 'silas' ? 'active' : ''}`}
+              onClick={() => runPreviewSimulation('silas')}
+              disabled={previewStreaming}
+            >
+              <Compass size={12} />
+              <span>Silas (Mentor)</span>
+            </button>
+          </div>
+          <div className="preview-content">
+            {previewHistory.map((item, i) => (
+              <div className="preview-bubble" key={i}>
+                <div 
+                  className="preview-avatar"
+                  style={{ 
+                    background: item.sender === 'user' 
+                      ? '#27272a' 
+                      : previewPersona === 'athena' 
+                        ? 'linear-gradient(135deg, #6366f1, #a855f7)' 
+                        : previewPersona === 'aurora' 
+                          ? 'linear-gradient(135deg, #ec4899, #f97316)' 
+                          : 'linear-gradient(135deg, #14b8a6, #10b981)'
+                  }}
+                >
+                  {item.sender === 'user' ? 'U' : previewPersona.charAt(0).toUpperCase()}
+                </div>
+                <div className="preview-text">
+                  {item.text.includes('```') ? (
+                    (() => {
+                      const parts = item.text.split('```');
+                      return (
+                        <>
+                          {parts[0]}
+                          {parts[1] && (
+                            <pre>
+                              <code>{parts[1].substring(parts[1].indexOf('\n') + 1)}</code>
+                            </pre>
+                          )}
+                        </>
+                      );
+                    })()
+                  ) : (
+                    item.text
+                  )}
+                </div>
+              </div>
+            ))}
           </div>
         </div>
       </section>
 
-      <hr className="section-separator" />
-
-      {/* 3. PERSONA SECTION */}
-      <section className="editorial-section persona-section" id="companions-section">
+      {/* Features Grid */}
+      <section className="grid-section" id="features">
         <div className="section-header">
-          <span className="sans-label section-header-label">The companions</span>
-          <h2 className="section-header-title">Choose who you think with</h2>
+          <span className="section-tag">Value Proposition</span>
+          <h2 className="section-title">Designed for absolute focus</h2>
         </div>
-
-        <div className="personas-grid">
-          {/* Athena */}
-          <div className="persona-col">
-            <span className="persona-num">I</span>
-            <h3 className="persona-name">Athena</h3>
-            <span className="persona-role">engineer</span>
-            <hr className="persona-divider" />
-            <p className="persona-desc">
-              Structured and precise framing. Athena handles logical breakdowns, technical details, and systemic reasoning with absolute clarity.
-            </p>
-            <a href="#" className="persona-link" onClick={(e) => { e.preventDefault(); onNavigateAuth(); }}>
-              Consult Athena
-            </a>
+        <div className="features-grid">
+          <div className="feature-card">
+            <div className="feature-icon-wrapper"><Lock size={16} /></div>
+            <h3>Local Storage Isolation</h3>
+            <p>Your conversations and environment settings are kept strictly on your local browser. No analytics tracking, no server history leaks.</p>
           </div>
-
-          {/* Aurora */}
-          <div className="persona-col">
-            <span className="persona-num">II</span>
-            <h3 className="persona-name">Aurora</h3>
-            <span className="persona-role">creative writer</span>
-            <hr className="persona-divider" />
-            <p className="persona-desc">
-              Editorial voice framing. Aurora builds narratives, explores imaginative phrasing, and brings a stylistic and evocative depth to text.
-            </p>
-            <a href="#" className="persona-link" onClick={(e) => { e.preventDefault(); onNavigateAuth(); }}>
-              Write with Aurora
-            </a>
+          <div className="feature-card">
+            <div className="feature-icon-wrapper"><Shield size={16} /></div>
+            <h3>Bring Your Own Keys</h3>
+            <p>Seamlessly configure Gemini keys to query models directly. Unlock priority endpoints without paying premium monthly markup rates.</p>
           </div>
-
-          {/* Silas */}
-          <div className="persona-col">
-            <span className="persona-num">III</span>
-            <h3 className="persona-name">Silas</h3>
-            <span className="persona-role">calm mentor</span>
-            <hr className="persona-divider" />
-            <p className="persona-desc">
-              Reflective framing. Silas offers thoughtful, calm guidance, grounding your ideas with patient questions and balanced perspectives.
-            </p>
-            <a href="#" className="persona-link" onClick={(e) => { e.preventDefault(); onNavigateAuth(); }}>
-              Reflect with Silas
-            </a>
+          <div className="feature-card">
+            <div className="feature-icon-wrapper"><History size={16} /></div>
+            <h3>Persistent Workspaces</h3>
+            <p>Organize threads, switch personas dynamically, and access your previous prompts whenever you return to the editor dashboard.</p>
           </div>
-        </div>
-
-        {/* Pull Quote */}
-        <div className="pull-quote">
-          <p className="pull-quote-text">
-            "We do not need another chatbot that copies human chatter. We need companions that help us find the architecture of our own thoughts."
-          </p>
-          <p className="sans-label pull-quote-attribution">-- Editorial Statement</p>
-        </div>
-      </section>
-
-      {/* 4. FEATURES SECTION (dark) */}
-      <section className="features-section-dark">
-        <div className="editorial-section">
-          <div className="section-header">
-            <span className="sans-label section-header-label">The capabilities</span>
-            <h2 className="section-header-title">Designed for focus</h2>
+          <div className="feature-card">
+            <div className="feature-icon-wrapper"><Cpu size={16} /></div>
+            <h3>Intent-Aware Companions</h3>
+            <p>Our pre-defined specialized agents adapt text formatting, code blocks, and guidance automatically based on context cues.</p>
           </div>
-
-          <div className="features-grid">
-            {/* Lock */}
-            <div className="feature-cell">
-              <Lock size={16} color="#39FF14" />
-              <h4 className="feature-cell-title">User Isolation</h4>
-              <p className="feature-cell-body">Your workspace is locally stored and fully sealed. No user can view or access another user's threads.</p>
-            </div>
-
-            {/* Clock */}
-            <div className="feature-cell">
-              <History size={16} color="#39FF14" />
-              <h4 className="feature-cell-title">Persistent Threads</h4>
-              <p className="feature-cell-body">Conversations are retained on your browser partition automatically, ready for your return.</p>
-            </div>
-
-            {/* Users */}
-            <div className="feature-cell">
-              <Users size={16} color="#39FF14" />
-              <h4 className="feature-cell-title">Multi-User Security</h4>
-              <p className="feature-cell-body">Seamless, isolated profile switching keeps distinct users and workloads cleanly segregated.</p>
-            </div>
-
-            {/* Calculator */}
-            <div className="feature-cell">
-              <Calculator size={16} color="#39FF14" />
-              <h4 className="feature-cell-title">Inline Mathematics</h4>
-              <p className="feature-cell-body">Athena solves formula expressions, logic steps, and formatted data arrays directly in the chat.</p>
-            </div>
-
-            {/* Brain */}
-            <div className="feature-cell">
-              <Brain size={16} color="#39FF14" />
-              <h4 className="feature-cell-title">Intent-Aware Outputs</h4>
-              <p className="feature-cell-body">The companions adjust their response formats dynamically based on the goals of your conversation.</p>
-            </div>
-
-            {/* Zap */}
-            <div className="feature-cell">
-              <Zap size={16} color="#39FF14" />
-              <h4 className="feature-cell-title">Zero Setup Required</h4>
-              <p className="feature-cell-body">Begin conversing instantly. Your credentials and environment are hashed and handled locally.</p>
-            </div>
+          <div className="feature-card">
+            <div className="feature-icon-wrapper"><Calculator size={16} /></div>
+            <h3>Inline Code Sandbox</h3>
+            <p>Extract, review, and copy code snippets with dedicated header actions and beautiful formatting across all devices.</p>
+          </div>
+          <div className="feature-card">
+            <div className="feature-icon-wrapper"><Zap size={16} /></div>
+            <h3>Zero-lag streaming</h3>
+            <p>Enjoy snappy, responsive typing simulations that closely replicate professional coding tools and productivity terminals.</p>
           </div>
         </div>
       </section>
 
-      {/* 5. FOOTER CTA */}
-      <section className="editorial-section footer-cta-section">
-        <div className="footer-cta-layout">
-          <h2 className="footer-cta-h2">
-            A different kind of <em className="serif-italic">conversation</em> starts here.
-          </h2>
-          <div className="footer-cta-sidebar">
-            <button className="btn-primary-cta" onClick={onNavigateAuth}>
-              <span>Begin your conversation</span>
-              <ArrowRight size={16} />
-            </button>
-            <p className="footer-cta-fineprint">
-              No credit card. No trial period. Your data stays on your device.
-            </p>
+      {/* Supported Models Section */}
+      <section className="grid-section" id="models">
+        <div className="section-header">
+          <span className="section-tag">Supported Frameworks</span>
+          <h2 className="section-title">Compatible AI Models</h2>
+        </div>
+        <div className="models-grid">
+          <div className="model-card">
+            <Code size={16} className="model-icon" />
+            <span className="model-name">Gemini 1.5 Pro</span>
+          </div>
+          <div className="model-card">
+            <Cpu size={16} className="model-icon" />
+            <span className="model-name">Gemini 1.5 Flash</span>
+          </div>
+          <div className="model-card">
+            <Sparkles size={16} className="model-icon" />
+            <span className="model-name">Claude 3.5 Sonnet</span>
+          </div>
+          <div className="model-card">
+            <Terminal size={16} className="model-icon" />
+            <span className="model-name">GPT-4o / Mini</span>
           </div>
         </div>
       </section>
 
-      {/* 6. FOOTER BAR */}
-      <footer className="footer-bar">
-        <div className="footer-bar-content">
-          <span>&copy; 2026 ChatX. All rights reserved.</span>
-          <span>MIT License, Open source</span>
+      {/* Pricing Section */}
+      <section className="grid-section" id="pricing">
+        <div className="section-header">
+          <span className="section-tag">Fair Pricing</span>
+          <h2 className="section-title">Plans that scale with you</h2>
+        </div>
+        <div className="pricing-grid">
+          <div className="pricing-card">
+            <h3>Free</h3>
+            <p style={{ fontSize: '0.8rem', color: '#a1a1aa' }}>For casual testing & learning</p>
+            <div className="price">$0 <span>/ month</span></div>
+            <ul className="pricing-features">
+              <li><Check size={12} /> Standard offline simulation</li>
+              <li><Check size={12} /> Local browser history</li>
+              <li><Check size={12} /> 3 default agent companions</li>
+            </ul>
+            <button className="pricing-btn" onClick={onNavigateAuth}>Get Started</button>
+          </div>
+          <div className="pricing-card premium">
+            <span className="pricing-badge">Popular</span>
+            <h3>Plus</h3>
+            <p style={{ fontSize: '0.8rem', color: '#a1a1aa' }}>For power users and writers</p>
+            <div className="price">$10 <span>/ month</span></div>
+            <ul className="pricing-features">
+              <li><Check size={12} /> Priority live streaming</li>
+              <li><Check size={12} /> Access to custom templates</li>
+              <li><Check size={12} /> API Key configuration</li>
+              <li><Check size={12} /> Saved prompt repository</li>
+            </ul>
+            <button className="pricing-btn" onClick={onNavigateAuth}>Upgrade Now</button>
+          </div>
+          <div className="pricing-card">
+            <h3>Developer</h3>
+            <p style={{ fontSize: '0.8rem', color: '#a1a1aa' }}>For API integration and sandbox</p>
+            <div className="price">Custom <span>/ month</span></div>
+            <ul className="pricing-features">
+              <li><Check size={12} /> Multi-user isolation</li>
+              <li><Check size={12} /> Custom model endpoints</li>
+              <li><Check size={12} /> Dedicated context memory</li>
+            </ul>
+            <button className="pricing-btn" onClick={onNavigateAuth}>Contact Us</button>
+          </div>
+        </div>
+      </section>
+
+      {/* FAQ Section */}
+      <section className="grid-section" id="faq">
+        <div className="section-header">
+          <span className="section-tag">Questions</span>
+          <h2 className="section-title">Frequently Asked Questions</h2>
+        </div>
+        <div className="faq-list">
+          {FAQ_ITEMS.map((faq, idx) => {
+            const isOpen = activeFaq === idx;
+            return (
+              <div className="faq-item" key={idx}>
+                <button 
+                  className="faq-trigger" 
+                  onClick={() => setActiveFaq(isOpen ? null : idx)}
+                >
+                  <span>{faq.question}</span>
+                  <ChevronDown 
+                    size={16} 
+                    style={{ 
+                      transform: isOpen ? 'rotate(180deg)' : 'rotate(0)', 
+                      transition: 'transform 0.2s' 
+                    }} 
+                  />
+                </button>
+                {isOpen && <div className="faq-answer">{faq.answer}</div>}
+              </div>
+            );
+          })}
+        </div>
+      </section>
+
+      {/* Footer */}
+      <footer className="landing-footer">
+        <div className="footer-content">
+          <div className="logo-group">
+            <MessageSquare size={18} />
+            <span>ChatX Workspace</span>
+          </div>
+          <div className="footer-links">
+            <a href="#" className="footer-link" onClick={(e) => e.preventDefault()}>Privacy Policy</a>
+            <a href="#" className="footer-link" onClick={(e) => e.preventDefault()}>Terms of Service</a>
+            <a href="#" className="footer-link" onClick={(e) => e.preventDefault()}>Security Statement</a>
+          </div>
+          <div className="footer-copyright">
+            &copy; 2026 ChatX. All rights reserved.
+          </div>
         </div>
       </footer>
     </div>
