@@ -1,5 +1,5 @@
-import React, { useRef, useEffect } from 'react';
-import { Menu, MessageSquare, Terminal, Sparkles, Compass, Plus, WifiOff } from 'lucide-react';
+import React, { useRef, useEffect, useState } from 'react';
+import { Menu, MessageSquare, Terminal, Sparkles, Compass, Plus, WifiOff, Code, FileText, Search, BrainCircuit, ArrowRight } from 'lucide-react';
 import { PERSONAS } from '../services/mockAi';
 import MessageItem from './MessageItem';
 import PersonaSelector from './PersonaSelector';
@@ -10,6 +10,36 @@ const PERSONA_ICONS = {
   aurora: Sparkles,
   silas: Compass
 };
+
+const QUICK_ACTIONS = [
+  {
+    category: "Develop",
+    icon: Code,
+    color: "#a855f7",
+    prompts: [
+      { label: "React debounce hook", text: "Write an optimized custom React hook for debouncing inputs." },
+      { label: "Explain closures", text: "Can you explain JavaScript closures with a practical coding example?" }
+    ]
+  },
+  {
+    category: "Write",
+    icon: FileText,
+    color: "#f97316",
+    prompts: [
+      { label: "Polite email response", text: "Help me write a professional and polite email turning down a project deadline extension." },
+      { label: "Story outline", text: "Create a detailed story outline about a lighthouse keeper who discovers a gateway to another dimension." }
+    ]
+  },
+  {
+    category: "Brainstorm",
+    icon: BrainCircuit,
+    color: "#10b981",
+    prompts: [
+      { label: "UI layout feedback", text: "What are some modern UX best practices for designing a complex settings dashboard?" },
+      { label: "App name ideas", text: "Brainstorm 10 catchy and sleek name ideas for a local-first markdown note-taking app." }
+    ]
+  }
+];
 
 export default function ChatArea({
   conversation,
@@ -45,14 +75,14 @@ export default function ChatArea({
   return (
     <div className="chat-container">
       {/* Header */}
-      <header className="chat-header glass-panel">
+      <header className="chat-header">
         <div className="header-meta">
           <button className="menu-toggle" onClick={onSidebarToggle} title="Toggle Sidebar">
-            <Menu size={22} />
+            <Menu size={20} />
           </button>
           <div className="persona-badge">
             <div
-              className={`persona-avatar avatar-animated-${activePersona.id}`}
+              className="persona-avatar"
               style={{ background: activePersona.gradient }}
             >
               {(() => {
@@ -70,8 +100,8 @@ export default function ChatArea({
           </div>
         </div>
 
-        {/* Header actions including new chat, simulate error toggle and switcher */}
-        <div className="header-actions" style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
+        {/* Header actions */}
+        <div className="header-actions">
           <button 
             className="header-new-chat-btn" 
             onClick={onNewChat} 
@@ -90,7 +120,7 @@ export default function ChatArea({
             <span className="btn-text">Simulate Error</span>
           </button>
 
-          <span className="divider-vr" style={{ width: '1px', height: '16px', background: 'var(--glass-border)' }} />
+          <span style={{ width: '1px', height: '16px', background: 'var(--border-subtle)' }} />
 
           <div className="agent-switcher" style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
             <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginRight: '4px', fontWeight: 500 }} className="agent-label">Agent:</span>
@@ -107,7 +137,7 @@ export default function ChatArea({
                     height: '26px',
                     borderRadius: '50%',
                     background: p.gradient,
-                    border: isCurrent ? '1.5px solid #ffffff' : '1px solid rgba(255, 255, 255, 0.08)',
+                    border: isCurrent ? '1.5px solid var(--text-primary)' : '1px solid var(--border-subtle)',
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
@@ -129,18 +159,75 @@ export default function ChatArea({
       {/* Main Conversation viewport */}
       <div className="messages-wrapper">
         {messages.length === 0 ? (
-          <div className="welcome-screen">
-            <MessageSquare size={48} className="welcome-icon" />
-            <h1>Choose Your Companion</h1>
-            <p>Select a specialized persona to start your conversation. You can change companions at any time.</p>
+          <div className="welcome-screen" style={{ paddingBottom: '40px' }}>
+            <MessageSquare size={44} className="welcome-icon" style={{ color: 'var(--text-secondary)' }} />
+            <h1>Start a new workspace chat</h1>
+            <p>Select your specialized companion to begin. Ask questions, generate code, write narratives, or seek structured mentorship.</p>
             
             <PersonaSelector
               selectedId={personaId}
               onSelect={setPersonaId}
             />
+
+            {/* Quick Actions Suggestions */}
+            <div className="quick-suggestions-workspace" style={{ width: '100%', marginTop: '36px', textAlign: 'left' }}>
+              <h2 style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '16px' }}>Suggested Tasks</h2>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '16px' }} className="persona-selector-grid">
+                {QUICK_ACTIONS.map((group, groupIdx) => {
+                  const GroupIcon = group.icon;
+                  return (
+                    <div 
+                      key={groupIdx} 
+                      className="glass-panel" 
+                      style={{ padding: '16px', borderRadius: '12px', display: 'flex', flexDirection: 'column', gap: '10px' }}
+                    >
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-primary)' }}>
+                        <span style={{ display: 'inline-flex', padding: '4px', borderRadius: '6px', background: 'rgba(255, 255, 255, 0.03)', border: '1px solid var(--border-subtle)', color: group.color }}>
+                          <GroupIcon size={13} />
+                        </span>
+                        {group.category}
+                      </div>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                        {group.prompts.map((p, pIdx) => (
+                          <button
+                            key={pIdx}
+                            onClick={() => handleSuggestionClick(p.text)}
+                            style={{
+                              background: 'var(--bg-primary)',
+                              border: '1px solid var(--border-subtle)',
+                              borderRadius: '6px',
+                              padding: '8px 10px',
+                              color: 'var(--text-secondary)',
+                              fontSize: '0.78rem',
+                              textAlign: 'left',
+                              cursor: 'pointer',
+                              display: 'flex',
+                              justifyContent: 'space-between',
+                              alignItems: 'center',
+                              transition: 'all 0.15s ease'
+                            }}
+                            onMouseEnter={(e) => {
+                              e.currentTarget.style.borderColor = 'var(--border-focus)';
+                              e.currentTarget.style.color = 'var(--text-primary)';
+                            }}
+                            onMouseLeave={(e) => {
+                              e.currentTarget.style.borderColor = 'var(--border-subtle)';
+                              e.currentTarget.style.color = 'var(--text-secondary)';
+                            }}
+                          >
+                            <span>{p.label}</span>
+                            <ArrowRight size={10} />
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
           </div>
         ) : (
-          <>
+          <div className="message-list">
             {messages.map((msg) => (
               <MessageItem
                 key={msg.id}
@@ -154,16 +241,25 @@ export default function ChatArea({
             {isTyping && !messages.some(m => m.sender === 'assistant' && !m.text && !m.error) && (
               <div className="message-bubble-container assistant">
                 <div
-                  className={`message-avatar avatar-animated-${activePersona.id}`}
-                  style={{ background: activePersona.gradient }}
+                  className="message-avatar"
+                  style={{ 
+                    background: activePersona.gradient,
+                    width: '32px',
+                    height: '32px',
+                    borderRadius: '50%',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    color: 'white'
+                  }}
                 >
                   {(() => {
                     const Icon = PERSONA_ICONS[activePersona.id] || Sparkles;
                     return <Icon size={14} />;
                   })()}
                 </div>
-                <div className="message-bubble" style={{ display: 'flex', alignItems: 'center', minHeight: '44px' }}>
-                  <div className="typing-indicator">
+                <div className="message-bubble" style={{ display: 'flex', justifyContent: 'center', minHeight: '44px' }}>
+                  <div className="typing-indicator" style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
                     <div className="typing-dot" />
                     <div className="typing-dot" />
                     <div className="typing-dot" />
@@ -172,7 +268,7 @@ export default function ChatArea({
               </div>
             )}
             <div ref={messagesEndRef} />
-          </>
+          </div>
         )}
       </div>
 
