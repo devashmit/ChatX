@@ -41,7 +41,7 @@ export default function MessageItem({ message, personaId, onRetry }) {
           href={linkUrl} 
           target="_blank" 
           rel="noopener noreferrer" 
-          style={{ color: 'var(--color-primary)', textDecoration: 'underline' }}
+          style={{ color: 'var(--text-primary)', textDecoration: 'underline', fontWeight: 500 }}
         >
           {linkText}
         </a>
@@ -75,7 +75,7 @@ export default function MessageItem({ message, personaId, onRetry }) {
     });
   };
 
-  // A comprehensive markdown parser to handle blocks (headers, lists, paragraphs) and inline styles
+  // A comprehensive markdown parser to handle blocks (headers, lists, paragraphs, tables, blockquotes)
   const renderMessageContent = (content) => {
     if (!content) return null;
     
@@ -93,15 +93,16 @@ export default function MessageItem({ message, personaId, onRetry }) {
         );
       }
 
-      // Even index: standard text blocks. Split by lines to render headers, lists, paragraphs
+      // Even index: standard text blocks.
       const lines = part.split('\n');
       const elements = [];
       let currentList = [];
+      let tableRows = [];
 
       const flushList = (key) => {
         if (currentList.length > 0) {
           elements.push(
-            <ul key={`list-${key}`} style={{ margin: '8px 0 8px 20px', listStyleType: 'disc' }}>
+            <ul key={`list-${key}`} style={{ margin: '8px 0 12px 20px', listStyleType: 'disc', display: 'flex', flexDirection: 'column', gap: '4px' }}>
               {currentList}
             </ul>
           );
@@ -109,46 +110,116 @@ export default function MessageItem({ message, personaId, onRetry }) {
         }
       };
 
+      const flushTable = (key) => {
+        if (tableRows.length > 0) {
+          const rows = tableRows.map(r => r.split('|').map(cell => cell.trim()).filter((_, idx, arr) => idx > 0 && idx < arr.length - 1));
+          const hasSeparator = rows.length > 1 && rows[1].every(cell => /^:-*-*:?$/.test(cell) || /^-+$/.test(cell));
+          const headers = hasSeparator ? rows[0] : null;
+          const bodyRows = hasSeparator ? rows.slice(2) : rows;
+
+          elements.push(
+            <div key={`table-${key}`} style={{ overflowX: 'auto', margin: '16px 0', border: '1px solid var(--border-subtle)', borderRadius: '8px' }}>
+              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.85rem', color: 'var(--text-primary)' }}>
+                {headers && (
+                  <thead>
+                    <tr style={{ background: 'var(--bg-secondary)', borderBottom: '1px solid var(--border-subtle)' }}>
+                      {headers.map((h, idx) => (
+                        <th key={idx} style={{ padding: '10px 14px', textAlign: 'left', fontWeight: '600', color: 'var(--text-primary)', borderBottom: '1px solid var(--border-subtle)' }}>
+                          {parseInline(h)}
+                        </th>
+                      ))}
+                    </tr>
+                  </thead>
+                )}
+                <tbody>
+                  {bodyRows.map((r, rIdx) => (
+                    <tr key={rIdx} style={{ borderBottom: rIdx === bodyRows.length - 1 ? 'none' : '1px solid var(--border-subtle)', background: rIdx % 2 === 0 ? 'transparent' : 'rgba(255, 255, 255, 0.01)' }}>
+                      {r.map((c, cIdx) => (
+                        <td key={cIdx} style={{ padding: '10px 14px', color: 'var(--text-secondary)' }}>
+                          {parseInline(c)}
+                        </td>
+                      ))}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          );
+          tableRows = [];
+        }
+      };
+
       for (let i = 0; i < lines.length; i++) {
         const line = lines[i];
         const trimmed = line.trim();
 
-        // 1. Headers (###, ##, #)
+        // 1. Tables (starts with |)
+        if (trimmed.startsWith('|')) {
+          flushList(i);
+          tableRows.push(trimmed);
+          continue;
+        } else {
+          flushTable(i);
+        }
+
+        // 2. Blockquotes (starts with >)
+        if (trimmed.startsWith('>')) {
+          flushList(i);
+          const quoteText = trimmed.substring(1).trim();
+          elements.push(
+            <blockquote 
+              key={i} 
+              style={{ 
+                borderLeft: '3px solid var(--text-secondary)', 
+                paddingLeft: '16px', 
+                margin: '12px 0', 
+                color: 'var(--text-secondary)',
+                fontStyle: 'italic'
+              }}
+            >
+              {parseInline(quoteText)}
+            </blockquote>
+          );
+          continue;
+        }
+
+        // 3. Headers (###, ##, #)
         if (trimmed.startsWith('### ')) {
           flushList(i);
-          elements.push(<h3 key={i} style={{ margin: '14px 0 6px 0', fontSize: '1.05rem', fontWeight: 600, color: 'var(--text-primary)' }}>{parseInline(trimmed.substring(4))}</h3>);
+          elements.push(<h3 key={i} style={{ margin: '20px 0 8px 0', fontSize: '1.1rem', fontWeight: 600, color: 'var(--text-primary)' }}>{parseInline(trimmed.substring(4))}</h3>);
         } else if (trimmed.startsWith('## ')) {
           flushList(i);
-          elements.push(<h2 key={i} style={{ margin: '16px 0 8px 0', fontSize: '1.15rem', fontWeight: 600, color: 'var(--text-primary)' }}>{parseInline(trimmed.substring(3))}</h2>);
+          elements.push(<h2 key={i} style={{ margin: '24px 0 12px 0', fontSize: '1.25rem', fontWeight: 600, color: 'var(--text-primary)' }}>{parseInline(trimmed.substring(3))}</h2>);
         } else if (trimmed.startsWith('# ')) {
           flushList(i);
-          elements.push(<h1 key={i} style={{ margin: '18px 0 10px 0', fontSize: '1.30rem', fontWeight: 700, color: 'var(--text-primary)' }}>{parseInline(trimmed.substring(2))}</h1>);
+          elements.push(<h1 key={i} style={{ margin: '28px 0 16px 0', fontSize: '1.45rem', fontWeight: 700, color: 'var(--text-primary)' }}>{parseInline(trimmed.substring(2))}</h1>);
         }
-        // 2. Unordered lists (- or *)
+        // 4. Unordered lists (- or *)
         else if (trimmed.startsWith('- ') || trimmed.startsWith('* ')) {
-          currentList.push(<li key={`li-${i}`} style={{ margin: '4px 0', fontSize: '0.9rem', color: 'var(--text-primary)' }}>{parseInline(trimmed.substring(2))}</li>);
+          currentList.push(<li key={`li-${i}`} style={{ fontSize: '0.92rem', color: 'var(--text-secondary)' }}>{parseInline(trimmed.substring(2))}</li>);
         }
-        // 3. Ordered lists (1., 2., etc.)
+        // 5. Ordered lists (1., 2., etc.)
         else if (/^\d+\.\s/.test(trimmed)) {
           flushList(i);
           const match = trimmed.match(/^(\d+)\.\s(.*)$/);
           elements.push(
-            <ol key={i} start={match[1]} style={{ margin: '8px 0 8px 24px', color: 'var(--text-primary)' }}>
-              <li style={{ margin: '4px 0', fontSize: '0.9rem' }}>{parseInline(match[2])}</li>
+            <ol key={i} start={match[1]} style={{ margin: '8px 0 12px 24px', color: 'var(--text-secondary)', display: 'flex', flexDirection: 'column', gap: '4px' }}>
+              <li style={{ fontSize: '0.92rem' }}>{parseInline(match[2])}</li>
             </ol>
           );
         }
-        // 4. Blank lines
+        // 6. Blank lines
         else if (trimmed === '') {
           flushList(i);
         }
-        // 5. Standard Paragraphs
+        // 7. Standard Paragraphs
         else {
           flushList(i);
-          elements.push(<p key={i} style={{ margin: '8px 0', lineHeight: 1.55 }}>{parseInline(line)}</p>);
+          elements.push(<p key={i} style={{ margin: '8px 0 12px 0', lineHeight: 1.6, color: 'var(--text-secondary)' }}>{parseInline(line)}</p>);
         }
       }
       flushList('end');
+      flushTable('end');
       return <React.Fragment key={index}>{elements}</React.Fragment>;
     });
   };
@@ -156,11 +227,9 @@ export default function MessageItem({ message, personaId, onRetry }) {
   return (
     <div className={`message-bubble-container ${isUser ? 'user' : 'assistant'}`}>
       <div
-        className={`message-avatar ${isUser ? 'avatar-user' : `avatar-animated-${persona.id}`}`}
+        className={`message-avatar ${isUser ? 'avatar-user' : ''}`}
         style={{
-          background: isUser
-            ? '#27272a'
-            : persona.gradient
+          background: isUser ? '#18181b' : persona.gradient
         }}
       >
         {isUser ? (
@@ -223,7 +292,7 @@ function CodeBlock({ language, code }) {
   };
 
   return (
-    <div className="code-block-container" style={{ margin: '12px 0' }}>
+    <div className="code-block-container" style={{ margin: '16px 0' }}>
       <div className="code-header">
         <span>{language}</span>
         <button className="copy-code-btn" onClick={handleCopy}>
