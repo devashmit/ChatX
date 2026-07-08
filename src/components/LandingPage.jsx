@@ -94,7 +94,7 @@ export default function LandingPage({ onNavigateAuth }) {
       {/* Self-contained style block for Landing Page specifics */}
       <style>{`
         .editorial-landing {
-          min-height: 100vh;
+          height: 100vh;
           width: 100vw;
           background-color: #09090b;
           color: #f4f4f5;
