@@ -1,6 +1,6 @@
 import React, { useRef, useEffect } from 'react';
 import { Send, Sparkles } from 'lucide-react';
-import { PERSONAS } from '../services/mockAi';
+import { getDynamicModels } from '../services/mockAi';
 
 export default function ChatInput({
   input,
@@ -12,7 +12,8 @@ export default function ChatInput({
   onSelectSuggestion
 }) {
   const textareaRef = useRef(null);
-  const persona = PERSONAS.find(p => p.id === personaId) || PERSONAS[0];
+  const dynamicModels = getDynamicModels();
+  const persona = dynamicModels.find(p => p.id === personaId) || dynamicModels[0];
 
   // Auto-grow textarea height
   useEffect(() => {

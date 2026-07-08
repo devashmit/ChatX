@@ -1,17 +1,14 @@
 import React, { useState } from 'react';
-import { Copy, Check, User, Terminal, Sparkles, Compass } from 'lucide-react';
-import { PERSONAS } from '../services/mockAi';
-
-const PERSONA_ICONS = {
-  athena: Terminal,
-  aurora: Sparkles,
-  silas: Compass
-};
+import { Copy, Check, User } from 'lucide-react';
+import { getDynamicModels } from '../services/mockAi';
+import { ICON_MAP } from '../services/modelRegistry';
 
 export default function MessageItem({ message, personaId, onRetry }) {
   const [copied, setCopied] = useState(false);
   const isUser = message.sender === 'user';
-  const persona = PERSONAS.find(p => p.id === personaId) || PERSONAS[0];
+  
+  const dynamicModels = getDynamicModels();
+  const persona = dynamicModels.find(p => p.id === personaId) || dynamicModels[0];
 
   const handleCopyMessage = () => {
     navigator.clipboard.writeText(message.text);
@@ -236,7 +233,7 @@ export default function MessageItem({ message, personaId, onRetry }) {
           <User size={13} />
         ) : (
           (() => {
-            const Icon = PERSONA_ICONS[persona.id] || Sparkles;
+            const Icon = ICON_MAP[persona.icon] || ICON_MAP.Sparkles;
             return <Icon size={13} />;
           })()
         )}

@@ -1,15 +1,10 @@
 import React, { useRef, useEffect, useState } from 'react';
 import { Menu, MessageSquare, Terminal, Sparkles, Compass, Plus, WifiOff, Code, FileText, Search, BrainCircuit, ArrowRight } from 'lucide-react';
-import { PERSONAS } from '../services/mockAi';
+import { getDynamicModels } from '../services/mockAi';
+import { ICON_MAP } from '../services/modelRegistry';
 import MessageItem from './MessageItem';
 import PersonaSelector from './PersonaSelector';
 import ChatInput from './ChatInput';
-
-const PERSONA_ICONS = {
-  athena: Terminal,
-  aurora: Sparkles,
-  silas: Compass
-};
 
 const QUICK_ACTIONS = [
   {
@@ -57,7 +52,8 @@ export default function ChatArea({
   onNewChat
 }) {
   const messagesEndRef = useRef(null);
-  const activePersona = PERSONAS.find(p => p.id === personaId) || PERSONAS[0];
+  const dynamicModels = getDynamicModels();
+  const activePersona = dynamicModels.find(p => p.id === personaId) || dynamicModels[0];
 
   // Auto scroll to bottom
   const scrollToBottom = () => {
@@ -86,7 +82,7 @@ export default function ChatArea({
               style={{ background: activePersona.gradient }}
             >
               {(() => {
-                const Icon = PERSONA_ICONS[activePersona.id] || Sparkles;
+                const Icon = ICON_MAP[activePersona.icon] || ICON_MAP.Sparkles;
                 return <Icon size={14} />;
               })()}
             </div>
@@ -124,8 +120,8 @@ export default function ChatArea({
 
           <div className="agent-switcher" style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
             <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginRight: '4px', fontWeight: 500 }} className="agent-label">Agent:</span>
-            {PERSONAS.map(p => {
-              const Icon = PERSONA_ICONS[p.id] || Sparkles;
+            {dynamicModels.map(p => {
+              const Icon = ICON_MAP[p.icon] || ICON_MAP.Sparkles;
               const isCurrent = p.id === personaId;
               return (
                 <button
