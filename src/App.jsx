@@ -3,281 +3,309 @@ import Sidebar from './components/Sidebar';
 import ChatArea from './components/ChatArea';
 import LandingPage from './components/LandingPage';
 import AuthPage from './components/AuthPage';
-import { streamAiResponse, getPersonaGreeting } from './services/mockAi';
-import { 
-  getCurrentUserSession, 
-  setCurrentUserSession, 
-  clearCurrentUserSession,
-  safeSetItem
-} from './services/storageUtils';
+import CommandPalette from './components/CommandPalette';
+import NotesWorkspace from './components/NotesWorkspace';
+import TasksWorkspace from './components/TasksWorkspace';
+import FilesWorkspace from './components/FilesWorkspace';
+import MemoryWorkspace from './components/MemoryWorkspace';
+import ArtifactPanel from './components/ArtifactPanel';
+import { executeAIRequest } from './services/aiService';
+import { getCurrentUserSession, clearCurrentUserSession } from './services/storageUtils';
 
 export default function App() {
   const [currentUser, setCurrentUser] = useState(null);
   const [currentView, setCurrentView] = useState('landing');
-  const [conversations, setConversations] = useState([]);
-  const [activeId, setActiveId] = useState(null);
+  const [projects, setProjects] = useState([]);
+  const [activeProjectId, setActiveProjectId] = useState(null);
+  const [activeChatId, setActiveChatId] = useState(null);
+  const [activeWorkspaceTab, setActiveWorkspaceTab] = useState('chat'); // 'chat' | 'notes' | 'tasks' | 'files' | 'memory'
 
+  // Settings states
+  const [showSettingsModal, setShowSettingsModal] = useState(false);
+  const [apiKey, setApiKey] = useState('');
+  const [themeMode, setThemeMode] = useState('dark');
+
+  // Interactive side-by-side Artifact state (Phase 7)
+  const [activeArtifact, setActiveArtifact] = useState(null);
+
+  // Command Palette state (Phase 10)
+  const [commandPaletteOpen, setCommandPaletteOpen] = useState(false);
+
+  // Global styling configurations
   const [personaId, setPersonaId] = useState('athena');
+  const [agentMode, setAgentMode] = useState('single'); // 'single' | 'collaborative' | 'consensus'
   const [input, setInput] = useState('');
   const [isTyping, setIsTyping] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  
   const [simulateError, setSimulateError] = useState(false);
-  
+
   const cancelStreamRef = useRef(null);
 
-  // Check active session on mount
+  const activeProject = projects.find(p => p.id === activeProjectId);
+  const activeConversation = activeProject?.chats?.find(c => c.id === activeChatId);
+  const activeMessages = activeConversation ? activeConversation.messages : [];
+
+  // Check active session and load projects on mount
   useEffect(() => {
     const session = getCurrentUserSession();
     if (session) {
-      const SESSION_TIMEOUT = 24 * 60 * 60 * 1000; // 24 hours
-      if (Date.now() - session.loginTime < SESSION_TIMEOUT) {
-        setCurrentUser(session);
-        setCurrentView('chat');
-      } else {
-        handleLogout();
-      }
+      setCurrentUser(session);
+      setCurrentView('chat');
     }
   }, []);
 
-  // Load user-specific conversations and activeId when user changes
+  // Load user-specific projects from localStorage
   useEffect(() => {
     if (currentUser) {
-      try {
-        const saved = localStorage.getItem(`chatx_conversations_${currentUser.username}`);
-        const parsed = saved ? JSON.parse(saved) : [];
-        setConversations(parsed);
-
-        const savedActiveId = localStorage.getItem(`chatx_active_id_${currentUser.username}`);
-        setActiveId(savedActiveId || null);
-      } catch (e) {
-        console.error("Failed to load user chats", e);
-        setConversations([]);
-        setActiveId(null);
+      const savedProjects = localStorage.getItem(`chatx_projects_${currentUser.username}`);
+      if (savedProjects) {
+        try {
+          const parsed = JSON.parse(savedProjects);
+          setProjects(parsed);
+          if (parsed.length > 0) {
+            setActiveProjectId(parsed[0].id);
+            if (parsed[0].chats?.length > 0) {
+              setActiveChatId(parsed[0].chats[0].id);
+            }
+          }
+        } catch (e) {
+          console.error("Failed to parse projects", e);
+          initializeDefaultProject();
+        }
+      } else {
+        initializeDefaultProject();
       }
     } else {
-      setConversations([]);
-      setActiveId(null);
+      setProjects([]);
+      setActiveProjectId(null);
+      setActiveChatId(null);
     }
   }, [currentUser]);
 
-  // Sync conversations to user-prefixed localStorage
+  // Sync projects to localStorage
   useEffect(() => {
-    if (currentUser && conversations.length > 0) {
-      safeSetItem(`chatx_conversations_${currentUser.username}`, conversations);
-    } else if (currentUser && conversations.length === 0) {
-      localStorage.removeItem(`chatx_conversations_${currentUser.username}`);
+    if (currentUser && projects.length > 0) {
+      localStorage.setItem(`chatx_projects_${currentUser.username}`, JSON.stringify(projects));
     }
-  }, [conversations, currentUser]);
+  }, [projects, currentUser]);
 
-  // Sync activeId to user-prefixed localStorage
+  // Global Keyboard Shortcuts (Phase 10 & 13)
   useEffect(() => {
-    if (currentUser) {
-      if (activeId) {
-        safeSetItem(`chatx_active_id_${currentUser.username}`, activeId);
-        // Sync persona of current conversation
-        const current = conversations.find(c => c.id === activeId);
-        if (current) {
-          setPersonaId(current.personaId);
-        }
-      } else {
-        localStorage.removeItem(`chatx_active_id_${currentUser.username}`);
+    const handleKeyDown = (e) => {
+      // Ctrl + K -> Command Palette
+      if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
+        e.preventDefault();
+        setCommandPaletteOpen(prev => !prev);
       }
-    }
-  }, [activeId, conversations, currentUser]);
-
-  // Cleanup streaming on unmount
-  useEffect(() => {
-    return () => {
-      if (cancelStreamRef.current) cancelStreamRef.current();
+      // Ctrl + / -> Toggle Sidebar
+      if ((e.ctrlKey || e.metaKey) && e.key === '/') {
+        e.preventDefault();
+        setSidebarOpen(prev => !prev);
+      }
+      // Ctrl + , -> Settings Control Center
+      if ((e.ctrlKey || e.metaKey) && e.key === ',') {
+        e.preventDefault();
+        setShowSettingsModal(true);
+      }
     };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
   }, []);
+
+  const initializeDefaultProject = () => {
+    const defaultProj = {
+      id: 'proj_default',
+      name: 'ChatX Core Sandbox',
+      description: 'Default project workspace for file context, task checklists, and code generation.',
+      chats: [
+        {
+          id: 'chat_welcome',
+          title: 'Workspace Welcome Chat',
+          personaId: 'athena',
+          messages: [
+            {
+              id: 'msg_welcome_assistant',
+              sender: 'assistant',
+              text: 'Hello! Welcome to your premium AI Productivity Workspace. Organize notes, files, tasks, and chats all inside target Projects. Try pressing Ctrl + K to launch the command center.',
+              timestamp: Date.now()
+            }
+          ],
+          createdAt: Date.now()
+        }
+      ],
+      notes: [
+        {
+          id: 'note_guide',
+          title: 'Workspace Quickstart',
+          content: '# Workspace Quickstart\n\n- **Chat**: Converse with specialized agents (Silas, Athena, Aurora).\n- **Notes**: Compose markdown documents side-by-side.\n- **Tasks**: Check off engineering objectives.\n- **Files**: Upload docs to feed context directly to the models.',
+          updatedAt: Date.now()
+        }
+      ],
+      tasks: [
+        { id: 't1', title: 'Complete ChatX architecture refactoring', status: 'in_progress', priority: 'high', createdAt: Date.now() },
+        { id: 't2', title: 'Test collaborative multi-agent execution pipeline', status: 'todo', priority: 'medium', createdAt: Date.now() }
+      ],
+      files: [],
+      memories: [],
+      artifacts: []
+    };
+    setProjects([defaultProj]);
+    setActiveProjectId(defaultProj.id);
+    setActiveChatId(defaultProj.chats[0].id);
+  };
 
   const handleLoginSuccess = (username) => {
     const session = { username, loginTime: Date.now() };
-    setCurrentUserSession(session);
+    localStorage.setItem('chatx_current_user', JSON.stringify(session));
     setCurrentUser(session);
     setCurrentView('chat');
   };
 
   const handleLogout = () => {
-    if (cancelStreamRef.current) {
-      cancelStreamRef.current();
-    }
+    if (cancelStreamRef.current) cancelStreamRef.current();
     clearCurrentUserSession();
     setCurrentUser(null);
-    setConversations([]);
-    setActiveId(null);
-    setInput('');
-    setIsTyping(false);
-    setSearchQuery('');
-    setSidebarOpen(false);
+    setProjects([]);
+    setActiveProjectId(null);
+    setActiveChatId(null);
     setCurrentView('landing');
   };
 
-  const activeConversation = conversations.find(c => c.id === activeId);
-  const activeMessages = activeConversation ? activeConversation.messages : [];
+  const handleCreateProject = (name) => {
+    const newProj = {
+      id: `proj_${Date.now()}`,
+      name,
+      description: 'Workspace project repository.',
+      chats: [],
+      notes: [],
+      tasks: [],
+      files: [],
+      memories: [],
+      artifacts: []
+    };
+    setProjects(prev => [newProj, ...prev]);
+    setActiveProjectId(newProj.id);
+    setActiveChatId(null);
+  };
 
-  // Update current active conversation's persona or switch to existing agent thread
-  const handleSelectPersona = (id) => {
-    setPersonaId(id);
-    const existing = conversations.find(c => c.personaId === id);
-    if (existing) {
-      setActiveId(existing.id);
-    } else {
-      const newId = `chat_${Date.now()}`;
-      const greeting = getPersonaGreeting(id);
-      const welcomeMsg = {
-        id: `msg_${Date.now()}_assistant`,
-        sender: 'assistant',
-        text: greeting,
-        timestamp: Date.now()
-      };
-      const newChat = {
-        id: newId,
-        title: `${id.charAt(0).toUpperCase() + id.slice(1)} Chat`,
-        personaId: id,
-        messages: [welcomeMsg],
-        createdAt: Date.now()
-      };
-      setConversations(prev => [newChat, ...prev]);
-      setActiveId(newId);
+  const handleSelectConversation = (chatId) => {
+    setActiveChatId(chatId);
+    setActiveWorkspaceTab('chat');
+    // Set active persona based on selected chat
+    const chat = activeProject?.chats?.find(c => c.id === chatId);
+    if (chat) {
+      setPersonaId(chat.personaId);
     }
   };
 
-  const handleNewConversation = () => {
+  const handleSelectPersona = (id) => {
+    setPersonaId(id);
+    if (!activeProject) return;
+
+    const existing = activeProject.chats.find(c => c.personaId === id);
+    if (existing) {
+      setActiveChatId(existing.id);
+    } else {
+      handleNewConversation(id);
+    }
+  };
+
+  const handleNewConversation = (targetPersonaId = personaId) => {
+    if (!activeProjectId) return;
     const newId = `chat_${Date.now()}`;
-    const greeting = getPersonaGreeting(personaId);
-    const welcomeMsg = {
-      id: `msg_${Date.now()}_assistant`,
-      sender: 'assistant',
-      text: greeting,
-      timestamp: Date.now()
-    };
     const newChat = {
       id: newId,
       title: 'New Conversation',
-      personaId: personaId,
-      messages: [welcomeMsg],
+      personaId: targetPersonaId,
+      messages: [
+        {
+          id: `msg_${Date.now()}_assistant`,
+          sender: 'assistant',
+          text: `Hello! I am here to help you in this project workspace. What are we designing today?`,
+          timestamp: Date.now()
+        }
+      ],
       createdAt: Date.now()
     };
-    setConversations(prev => [newChat, ...prev]);
-    setActiveId(newId);
+
+    setProjects(prev =>
+      prev.map(p =>
+        p.id === activeProjectId
+          ? { ...p, chats: [newChat, ...p.chats] }
+          : p
+      )
+    );
+    setActiveChatId(newId);
   };
 
-  const handleDeleteConversation = (id) => {
-    const nextConversations = conversations.filter(c => c.id !== id);
-    setConversations(nextConversations);
-    
-    if (activeId === id) {
-      setActiveId(nextConversations.length > 0 ? nextConversations[0].id : null);
+  const handleDeleteConversation = (chatId) => {
+    setProjects(prev =>
+      prev.map(p => {
+        if (p.id === activeProjectId) {
+          const nextChats = p.chats.filter(c => c.id !== chatId);
+          return { ...p, chats: nextChats };
+        }
+        return p;
+      })
+    );
+    if (activeChatId === chatId) {
+      setActiveChatId(null);
     }
   };
 
-  const handleRetry = (failedMsgId) => {
-    const currentActiveId = activeId;
-    const current = conversations.find(c => c.id === currentActiveId);
-    if (!current) return;
-    
-    const failedMsgIndex = current.messages.findIndex(m => m.id === failedMsgId);
-    if (failedMsgIndex === -1) return;
-    
-    const userMsg = current.messages[failedMsgIndex - 1];
-    const textToRetry = userMsg ? userMsg.text : "";
-    
-    // Remove the failed message from active conversations
-    setConversations(prev =>
-      prev.map(c => {
-        if (c.id === currentActiveId) {
-          return {
-            ...c,
-            messages: c.messages.slice(0, failedMsgIndex)
-          };
-        }
-        return c;
-      })
-    );
-    
-    setIsTyping(true);
-    
-    const assistantMsgId = `msg_${Date.now()}_assistant`;
-    const assistantMsgPlaceholder = {
-      id: assistantMsgId,
-      sender: 'assistant',
-      text: '',
-      timestamp: Date.now()
+  // Branching / Forking logic (Phase 9)
+  const handleForkMessage = (msgId) => {
+    if (!activeConversation || !activeProject) return;
+    const index = activeMessages.findIndex(m => m.id === msgId);
+    if (index === -1) return;
+
+    const forkedMessages = activeMessages.slice(0, index + 1);
+    const newChatId = `chat_${Date.now()}`;
+    const forkedChat = {
+      id: newChatId,
+      title: `Forked: ${activeConversation.title}`,
+      personaId: activeConversation.personaId,
+      messages: forkedMessages,
+      createdAt: Date.now()
     };
 
-    setConversations(prev =>
-      prev.map(c =>
-        c.id === currentActiveId
-          ? { ...c, messages: [...c.messages, assistantMsgPlaceholder] }
-          : c
+    setProjects(prev =>
+      prev.map(p =>
+        p.id === activeProjectId
+          ? { ...p, chats: [forkedChat, ...p.chats] }
+          : p
       )
     );
-
-    cancelStreamRef.current = streamAiResponse(
-      personaId,
-      textToRetry,
-      (chunkText) => {
-        setConversations(prev =>
-          prev.map(c => {
-            if (c.id === currentActiveId) {
-              return {
-                ...c,
-                messages: c.messages.map(m =>
-                  m.id === assistantMsgId ? { ...m, text: chunkText } : m
-                )
-              };
-            }
-            return c;
-          })
-        );
-      },
-      () => {
-        setIsTyping(false);
-      },
-      (err) => {
-        setIsTyping(false);
-        setConversations(prev =>
-          prev.map(c => {
-            if (c.id === currentActiveId) {
-              return {
-                ...c,
-                messages: c.messages.map(m =>
-                  m.id === assistantMsgId ? { ...m, error: err.message } : m
-                )
-              };
-            }
-            return c;
-          })
-        );
-      },
-      simulateError
-    );
+    setActiveChatId(newChatId);
   };
 
   const handleSendMessage = (text) => {
-    let currentActiveId = activeId;
-    let currentConversations = [...conversations];
+    if (!activeProjectId) return;
+    let currentChatId = activeChatId;
 
-    // Auto-create conversation if none is active
-    if (!currentActiveId) {
-      currentActiveId = `chat_${Date.now()}`;
+    // Create a new conversation if none exists in the current project
+    if (!currentChatId) {
+      currentChatId = `chat_${Date.now()}`;
       const newChat = {
-        id: currentActiveId,
+        id: currentChatId,
         title: text.length > 25 ? text.substring(0, 25) + '...' : text,
         personaId: personaId,
         messages: [],
         createdAt: Date.now()
       };
-      currentConversations = [newChat, ...currentConversations];
-      setConversations(currentConversations);
-      setActiveId(currentActiveId);
+      
+      setProjects(prev =>
+        prev.map(p =>
+          p.id === activeProjectId
+            ? { ...p, chats: [newChat, ...p.chats] }
+            : p
+        )
+      );
+      setActiveChatId(currentChatId);
     }
 
-    // 1. Add User Message
     const userMsg = {
       id: `msg_${Date.now()}_user`,
       sender: 'user',
@@ -285,27 +313,27 @@ export default function App() {
       timestamp: Date.now()
     };
 
-    // Update conversation state with user message
-    const updatedConversations = currentConversations.map(c => {
-      if (c.id === currentActiveId) {
-        // Update title if it was the first message
-        const title = c.messages.length === 0 
-          ? (text.length > 25 ? text.substring(0, 25) + '...' : text)
-          : c.title;
+    // Update conversation with user message
+    setProjects(prev =>
+      prev.map(p => {
+        if (p.id === activeProjectId) {
+          const updatedChats = p.chats.map(c => {
+            if (c.id === currentChatId) {
+              const title = c.messages.length === 0
+                ? (text.length > 25 ? text.substring(0, 25) + '...' : text)
+                : c.title;
+              return { ...c, title, messages: [...c.messages, userMsg] };
+            }
+            return c;
+          });
+          return { ...p, chats: updatedChats };
+        }
+        return p;
+      })
+    );
 
-        return {
-          ...c,
-          title,
-          messages: [...c.messages, userMsg]
-        };
-      }
-      return c;
-    });
-
-    setConversations(updatedConversations);
     setIsTyping(true);
 
-    // 2. Prepare Assistant Message container
     const assistantMsgId = `msg_${Date.now()}_assistant`;
     const assistantMsgPlaceholder = {
       id: assistantMsgId,
@@ -314,58 +342,128 @@ export default function App() {
       timestamp: Date.now()
     };
 
-    // Append empty assistant message for streaming
-    setConversations(prev =>
-      prev.map(c =>
-        c.id === currentActiveId
-          ? { ...c, messages: [...c.messages, assistantMsgPlaceholder] }
-          : c
-      )
+    setProjects(prev =>
+      prev.map(p => {
+        if (p.id === activeProjectId) {
+          const updatedChats = p.chats.map(c =>
+            c.id === currentChatId
+              ? { ...c, messages: [...c.messages, assistantMsgPlaceholder] }
+              : c
+          );
+          return { ...p, chats: updatedChats };
+        }
+        return p;
+      })
     );
 
-    // 3. Trigger Mock Streaming Response
-    cancelStreamRef.current = streamAiResponse(
-      personaId,
-      text,
-      // Chunk Callback (updates text in real-time)
-      (chunkText) => {
-        setConversations(prev =>
-          prev.map(c => {
-            if (c.id === currentActiveId) {
+    // Call Integrated context-aware AI service (Phases 2, 3, 4, 6, 8)
+    cancelStreamRef.current = executeAIRequest({
+      userPrompt: text,
+      history: activeMessages,
+      activeProject,
+      activeAgentId: personaId,
+      agentMode,
+      allMemories: activeProject?.memories || [],
+      apiKey,
+      onChunk: (chunkText) => {
+        setProjects(prev =>
+          prev.map(p => {
+            if (p.id === activeProjectId) {
               return {
-                ...c,
-                messages: c.messages.map(m =>
-                  m.id === assistantMsgId ? { ...m, text: chunkText } : m
-                )
+                ...p,
+                chats: p.chats.map(c => {
+                  if (c.id === currentChatId) {
+                    return {
+                      ...c,
+                      messages: c.messages.map(m =>
+                        m.id === assistantMsgId ? { ...m, text: chunkText } : m
+                      )
+                    };
+                  }
+                  return c;
+                })
               };
             }
-            return c;
+            return p;
           })
         );
       },
-      // Completion Callback
-      () => {
+      onComplete: (fullText) => {
         setIsTyping(false);
+
+        // Auto-extract Interactive Artifacts if generated (Phase 7)
+        const uiMatch = fullText.match(/```(?:javascript|xml|html)?\s*(?:\(([^)]+)\))?\n([\s\S]*?)```/);
+        if (uiMatch) {
+          const filename = uiMatch[1] || 'dashboard_view.js';
+          const code = uiMatch[2];
+          const isUi = filename.includes('js') || filename.includes('html') || filename.includes('xml');
+          
+          const newArtifact = {
+            id: `art_${Date.now()}`,
+            title: filename.split('.')[0].replace(/_/g, ' ').toUpperCase(),
+            filename,
+            code: code.trim(),
+            type: isUi ? 'ui' : 'diagram',
+            createdAt: Date.now()
+          };
+
+          setActiveArtifact(newArtifact);
+        }
       },
-      // Error Callback
-      (err) => {
+      onError: (err) => {
         setIsTyping(false);
-        setConversations(prev =>
-          prev.map(c => {
-            if (c.id === currentActiveId) {
+        setProjects(prev =>
+          prev.map(p => {
+            if (p.id === activeProjectId) {
               return {
-                ...c,
-                messages: c.messages.map(m =>
-                  m.id === assistantMsgId ? { ...m, error: err.message } : m
-                )
+                ...p,
+                chats: p.chats.map(c => {
+                  if (c.id === currentChatId) {
+                    return {
+                      ...c,
+                      messages: c.messages.map(m =>
+                        m.id === assistantMsgId ? { ...m, error: err.message } : m
+                      )
+                    };
+                  }
+                  return c;
+                })
               };
             }
-            return c;
+            return p;
           })
         );
-      },
-      simulateError
+      }
+    });
+  };
+
+  const handleRetry = (failedMsgId) => {
+    if (!activeConversation) return;
+    const idx = activeMessages.findIndex(m => m.id === failedMsgId);
+    if (idx === -1) return;
+
+    const userMsg = activeMessages[idx - 1];
+    if (!userMsg) return;
+
+    // Prune failing branch
+    setProjects(prev =>
+      prev.map(p => {
+        if (p.id === activeProjectId) {
+          return {
+            ...p,
+            chats: p.chats.map(c => {
+              if (c.id === activeChatId) {
+                return { ...c, messages: c.messages.slice(0, idx) };
+              }
+              return c;
+            })
+          };
+        }
+        return p;
+      })
     );
+
+    handleSendMessage(userMsg.text);
   };
 
   if (currentView === 'landing') {
@@ -383,43 +481,196 @@ export default function App() {
 
   return (
     <div className="app-container">
-      {/* Background decoration */}
+      {/* Background matte glows */}
       <div className="background-glows">
         <div className="glow-1" />
         <div className="glow-2" />
       </div>
 
-      {/* Sidebar history panel */}
+      {/* Global Command Center Palette (Ctrl + K) */}
+      <CommandPalette
+        isOpen={commandPaletteOpen}
+        onClose={() => setCommandPaletteOpen(false)}
+        projects={projects}
+        onCreateProject={handleCreateProject}
+        onSwitchProject={(id) => {
+          setActiveProjectId(id);
+          const proj = projects.find(p => p.id === id);
+          if (proj && proj.chats?.length > 0) {
+            setActiveChatId(proj.chats[0].id);
+          } else {
+            setActiveChatId(null);
+          }
+        }}
+        onSelectAgent={(id) => {
+          setPersonaId(id);
+          setActiveWorkspaceTab('chat');
+        }}
+        onOpenSettings={() => setShowSettingsModal(true)}
+        onOpenMemory={() => setActiveWorkspaceTab('memory')}
+      />
+
+      {/* Navigation History Sidebar */}
       <Sidebar
         currentUser={currentUser}
         onLogout={handleLogout}
-        conversations={conversations}
-        activeId={activeId}
+        conversations={activeProject?.chats || []}
+        activeId={activeChatId}
         searchQuery={searchQuery}
         setSearchQuery={setSearchQuery}
-        onSelectConversation={setActiveId}
-        onNewConversation={handleNewConversation}
+        onSelectConversation={handleSelectConversation}
+        onNewConversation={() => handleNewConversation()}
         onDeleteConversation={handleDeleteConversation}
         isOpen={sidebarOpen}
         setIsOpen={setSidebarOpen}
+        projects={projects}
+        activeProjectId={activeProjectId}
+        onSwitchProject={(id) => {
+          setActiveProjectId(id);
+          const proj = projects.find(p => p.id === id);
+          if (proj && proj.chats?.length > 0) {
+            setActiveChatId(proj.chats[0].id);
+          } else {
+            setActiveChatId(null);
+          }
+        }}
+        workspaceFiles={activeProject?.files || []}
+        onOpenSettings={() => setShowSettingsModal(true)}
       />
 
-      {/* Main chat interface */}
-      <ChatArea
-        conversation={activeConversation}
-        personaId={personaId}
-        setPersonaId={handleSelectPersona}
-        messages={activeMessages}
-        isTyping={isTyping}
-        input={input}
-        setInput={setInput}
-        onSendMessage={handleSendMessage}
-        onSidebarToggle={() => setSidebarOpen(!sidebarOpen)}
-        simulateError={simulateError}
-        setSimulateError={setSimulateError}
-        onRetry={handleRetry}
-        onNewChat={handleNewConversation}
-      />
+      {/* Primary Workspace Area */}
+      <div className="workspace-main-layout">
+        <div className="workspace-center-panel" style={{ padding: '16px 24px 0 24px' }}>
+          {/* Project Header and Workspace Tabs */}
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+            <div style={{ display: 'flex', flexDirection: 'column' }}>
+              <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Active Project</span>
+              <h2 style={{ fontSize: '1.25rem', fontWeight: 700, color: 'var(--text-primary)' }}>
+                {activeProject?.name || 'Loading Project...'}
+              </h2>
+            </div>
+
+            {/* Workspace tabs navigator */}
+            <div className="workspace-tabs">
+              <button
+                className={`workspace-tab-btn ${activeWorkspaceTab === 'chat' ? 'active' : ''}`}
+                onClick={() => setActiveWorkspaceTab('chat')}
+              >
+                Chat
+              </button>
+              <button
+                className={`workspace-tab-btn ${activeWorkspaceTab === 'notes' ? 'active' : ''}`}
+                onClick={() => setActiveWorkspaceTab('notes')}
+              >
+                Notes
+              </button>
+              <button
+                className={`workspace-tab-btn ${activeWorkspaceTab === 'tasks' ? 'active' : ''}`}
+                onClick={() => setActiveWorkspaceTab('tasks')}
+              >
+                Tasks
+              </button>
+              <button
+                className={`workspace-tab-btn ${activeWorkspaceTab === 'files' ? 'active' : ''}`}
+                onClick={() => setActiveWorkspaceTab('files')}
+              >
+                Files Context
+              </button>
+              <button
+                className={`workspace-tab-btn ${activeWorkspaceTab === 'memory' ? 'active' : ''}`}
+                onClick={() => setActiveWorkspaceTab('memory')}
+              >
+                Memory Bank
+              </button>
+            </div>
+          </div>
+
+          {/* Active Tab Viewport */}
+          <div style={{ flex: 1, minHeight: 0, position: 'relative' }}>
+            {activeWorkspaceTab === 'chat' && (
+              <ChatArea
+                conversation={activeConversation}
+                personaId={personaId}
+                setPersonaId={handleSelectPersona}
+                messages={activeMessages}
+                isTyping={isTyping}
+                input={input}
+                setInput={setInput}
+                onSendMessage={handleSendMessage}
+                onSidebarToggle={() => setSidebarOpen(!sidebarOpen)}
+                simulateError={simulateError}
+                setSimulateError={setSimulateError}
+                onRetry={handleRetry}
+                onNewChat={() => handleNewConversation()}
+                agentMode={agentMode}
+                setAgentMode={setAgentMode}
+                onForkMessage={handleForkMessage}
+              />
+            )}
+
+            {activeWorkspaceTab === 'notes' && (
+              <NotesWorkspace
+                notes={activeProject?.notes || []}
+                onUpdateNotes={(updatedNotes) => {
+                  setProjects(prev =>
+                    prev.map(p =>
+                      p.id === activeProjectId ? { ...p, notes: updatedNotes } : p
+                    )
+                  );
+                }}
+              />
+            )}
+
+            {activeWorkspaceTab === 'tasks' && (
+              <TasksWorkspace
+                tasks={activeProject?.tasks || []}
+                onUpdateTasks={(updatedTasks) => {
+                  setProjects(prev =>
+                    prev.map(p =>
+                      p.id === activeProjectId ? { ...p, tasks: updatedTasks } : p
+                    )
+                  );
+                }}
+              />
+            )}
+
+            {activeWorkspaceTab === 'files' && (
+              <FilesWorkspace
+                files={activeProject?.files || []}
+                onUpdateFiles={(updatedFiles) => {
+                  setProjects(prev =>
+                    prev.map(p =>
+                      p.id === activeProjectId ? { ...p, files: updatedFiles } : p
+                    )
+                  );
+                }}
+              />
+            )}
+
+            {activeWorkspaceTab === 'memory' && (
+              <MemoryWorkspace
+                memories={activeProject?.memories || []}
+                onUpdateMemories={(updatedMemories) => {
+                  setProjects(prev =>
+                    prev.map(p =>
+                      p.id === activeProjectId ? { ...p, memories: updatedMemories } : p
+                    )
+                  );
+                }}
+              />
+            )}
+          </div>
+        </div>
+
+        {/* Side-by-Side Artifact Presentation Panel (Phase 7) */}
+        {activeArtifact && (
+          <ArtifactPanel
+            artifact={activeArtifact}
+            onClose={() => setActiveArtifact(null)}
+            onUpdateArtifact={(updatedArt) => setActiveArtifact(updatedArt)}
+          />
+        )}
+      </div>
     </div>
   );
 }

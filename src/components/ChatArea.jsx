@@ -49,7 +49,10 @@ export default function ChatArea({
   simulateError,
   setSimulateError,
   onRetry,
-  onNewChat
+  onNewChat,
+  agentMode = 'single',
+  setAgentMode,
+  onForkMessage
 }) {
   const messagesEndRef = useRef(null);
   const dynamicModels = getDynamicModels();
@@ -97,7 +100,7 @@ export default function ChatArea({
         </div>
 
         {/* Header actions */}
-        <div className="header-actions">
+        <div className="header-actions" style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
           <button 
             className="header-new-chat-btn" 
             onClick={onNewChat} 
@@ -118,6 +121,31 @@ export default function ChatArea({
 
           <span style={{ width: '1px', height: '16px', background: 'var(--border-subtle)' }} />
 
+          {/* Collaborative Agent Mode Selector */}
+          <div className="agent-mode-selector" style={{ display: 'flex', gap: '2px', background: 'var(--bg-primary)', padding: '2px', borderRadius: '6px', border: '1px solid var(--border-subtle)' }}>
+            {['single', 'collaborative', 'consensus'].map(m => (
+              <button
+                key={m}
+                onClick={() => setAgentMode(m)}
+                style={{
+                  padding: '4px 8px',
+                  borderRadius: '4px',
+                  background: agentMode === m ? 'var(--bg-tertiary)' : 'transparent',
+                  color: agentMode === m ? 'var(--text-primary)' : 'var(--text-secondary)',
+                  border: 'none',
+                  fontSize: '0.7rem',
+                  fontWeight: 500,
+                  cursor: 'pointer',
+                  textTransform: 'capitalize'
+                }}
+              >
+                {m}
+              </button>
+            ))}
+          </div>
+
+          <span style={{ width: '1px', height: '16px', background: 'var(--border-subtle)' }} />
+
           <div className="agent-switcher" style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
             <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginRight: '4px', fontWeight: 500 }} className="agent-label">Agent:</span>
             {dynamicModels.map(p => {
@@ -128,6 +156,7 @@ export default function ChatArea({
                   key={p.id}
                   onClick={() => setPersonaId(p.id)}
                   title={`Switch to ${p.name}`}
+                  disabled={agentMode !== 'single'}
                   style={{
                     width: '26px',
                     height: '26px',
@@ -138,7 +167,8 @@ export default function ChatArea({
                     alignItems: 'center',
                     justifyContent: 'center',
                     color: 'white',
-                    cursor: 'pointer',
+                    cursor: agentMode === 'single' ? 'pointer' : 'not-allowed',
+                    opacity: agentMode === 'single' ? 1 : 0.4,
                     transition: 'all 0.2s',
                     transform: isCurrent ? 'scale(1.08)' : 'scale(1)',
                     boxShadow: isCurrent ? '0 0 8px rgba(255, 255, 255, 0.15)' : 'none'
@@ -230,6 +260,7 @@ export default function ChatArea({
                 message={msg}
                 personaId={personaId}
                 onRetry={onRetry}
+                onFork={onForkMessage}
               />
             ))}
             
@@ -250,7 +281,7 @@ export default function ChatArea({
                   }}
                 >
                   {(() => {
-                    const Icon = PERSONA_ICONS[activePersona.id] || Sparkles;
+                    const Icon = ICON_MAP[activePersona.icon] || Sparkles;
                     return <Icon size={14} />;
                   })()}
                 </div>

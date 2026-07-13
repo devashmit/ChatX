@@ -12,7 +12,13 @@ export default function Sidebar({
   onNewConversation,
   onDeleteConversation,
   isOpen,
-  setIsOpen
+  setIsOpen,
+  projects = [],
+  activeProjectId,
+  onSwitchProject,
+  workspaceFiles = [],
+  onOpenSettings,
+  onOpenMemory
 }) {
   const [showSettingsModal, setShowSettingsModal] = useState(false);
   const [settingsTab, setSettingsTab] = useState('appearance');
@@ -20,17 +26,6 @@ export default function Sidebar({
   const [showKey, setShowKey] = useState(false);
   const [themeMode, setThemeMode] = useState('dark');
   const [activeModel, setActiveModel] = useState('gemini-1.5-pro');
-
-  // Workspace mock lists
-  const projects = [
-    { id: 'p1', name: 'ChatX Redesign' },
-    { id: 'p2', name: 'Frontend Refactoring' }
-  ];
-
-  const workspaceFiles = [
-    { id: 'f1', name: 'mockAi.js' },
-    { id: 'f2', name: 'index.css' }
-  ];
 
   // Load API key on mount
   useEffect(() => {
@@ -130,35 +125,43 @@ export default function Sidebar({
 
           {/* Projects */}
           <div className="workspace-section-header">Projects</div>
-          {projects.map((p) => (
-            <div 
-              key={p.id} 
-              className="history-item"
-              style={{ padding: '6px 12px', fontSize: '0.82rem' }}
-              onClick={() => alert(`Project workspace features are locally active for: ${p.name}`)}
-            >
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <FolderOpen size={13} style={{ color: 'var(--text-muted)' }} />
-                <span>{p.name}</span>
+          {projects.map((p) => {
+            const isSel = p.id === activeProjectId;
+            return (
+              <div 
+                key={p.id} 
+                className={`history-item ${isSel ? 'active' : ''}`}
+                style={{ padding: '6px 12px', fontSize: '0.82rem' }}
+                onClick={() => onSwitchProject(p.id)}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <FolderOpen size={13} style={{ color: isSel ? 'var(--text-primary)' : 'var(--text-muted)' }} />
+                  <span>{p.name}</span>
+                </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
 
           {/* Assets */}
           <div className="workspace-section-header">Recent Files</div>
-          {workspaceFiles.map((f) => (
-            <div 
-              key={f.id} 
-              className="history-item"
-              style={{ padding: '6px 12px', fontSize: '0.82rem' }}
-              onClick={() => alert(`File context applied: ${f.name}`)}
-            >
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <FileText size={13} style={{ color: 'var(--text-muted)' }} />
-                <span>{f.name}</span>
-              </div>
+          {workspaceFiles.length === 0 ? (
+            <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', padding: '6px 12px' }}>
+              No project files uploaded
             </div>
-          ))}
+          ) : (
+            workspaceFiles.map((f) => (
+              <div 
+                key={f.id} 
+                className="history-item"
+                style={{ padding: '6px 12px', fontSize: '0.82rem' }}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', overflow: 'hidden' }}>
+                  <FileText size={13} style={{ color: 'var(--text-muted)', flexShrink: 0 }} />
+                  <span style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{f.name}</span>
+                </div>
+              </div>
+            ))
+          )}
         </div>
 
         {/* Sidebar Footer */}
@@ -174,7 +177,7 @@ export default function Sidebar({
             <button 
               className="logout-btn" 
               title="Settings Control Center"
-              onClick={() => setShowSettingsModal(true)}
+              onClick={() => onOpenSettings ? onOpenSettings() : setShowSettingsModal(true)}
             >
               <Settings size={15} />
             </button>
