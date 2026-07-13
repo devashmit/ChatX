@@ -3,7 +3,7 @@ import { Copy, Check, User } from 'lucide-react';
 import { getDynamicModels } from '../services/mockAi';
 import { ICON_MAP } from '../services/modelRegistry';
 
-export default function MessageItem({ message, personaId, onRetry }) {
+export default function MessageItem({ message, personaId, onRetry, onFork }) {
   const [copied, setCopied] = useState(false);
   const isUser = message.sender === 'user';
   
@@ -270,6 +270,16 @@ export default function MessageItem({ message, personaId, onRetry }) {
                   <span>Copy</span>
                 </>
               )}
+            </button>
+          )}
+          {isUser && onFork && (
+            <button 
+              className="copy-msg-btn" 
+              onClick={() => onFork(message.id)} 
+              title="Fork/Branch conversation from this point"
+              style={{ marginLeft: '8px' }}
+            >
+              Fork
             </button>
           )}
         </div>
