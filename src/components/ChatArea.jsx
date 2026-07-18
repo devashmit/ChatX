@@ -1,5 +1,8 @@
 import React, { useRef, useEffect, useState } from 'react';
-import { Menu, MessageSquare, Terminal, Sparkles, Compass, Plus, WifiOff, Code, FileText, Search, BrainCircuit, ArrowRight } from 'lucide-react';
+import { 
+  Menu, MessageSquare, Plus, WifiOff, Code, FileText, 
+  BrainCircuit, ArrowRight, Share2, MoreHorizontal, Sparkles
+} from 'lucide-react';
 import { getDynamicModels } from '../services/mockAi';
 import { ICON_MAP } from '../services/modelRegistry';
 import MessageItem from './MessageItem';
@@ -10,7 +13,7 @@ const QUICK_ACTIONS = [
   {
     category: "Develop",
     icon: Code,
-    color: "#a855f7",
+    color: "#3b82f6",
     prompts: [
       { label: "React debounce hook", text: "Write an optimized custom React hook for debouncing inputs." },
       { label: "Explain closures", text: "Can you explain JavaScript closures with a practical coding example?" }
@@ -19,7 +22,7 @@ const QUICK_ACTIONS = [
   {
     category: "Write",
     icon: FileText,
-    color: "#f97316",
+    color: "#a1a1aa",
     prompts: [
       { label: "Polite email response", text: "Help me write a professional and polite email turning down a project deadline extension." },
       { label: "Story outline", text: "Create a detailed story outline about a lighthouse keeper who discovers a gateway to another dimension." }
@@ -58,7 +61,6 @@ export default function ChatArea({
   const dynamicModels = getDynamicModels();
   const activePersona = dynamicModels.find(p => p.id === personaId) || dynamicModels[0];
 
-  // Auto scroll to bottom
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
@@ -73,47 +75,33 @@ export default function ChatArea({
 
   return (
     <div className="chat-container">
-      {/* Header */}
+      {/* Minimal Top Bar Navigation */}
       <header className="chat-header">
         <div className="header-meta">
           <button className="menu-toggle" onClick={onSidebarToggle} title="Toggle Sidebar">
-            <Menu size={20} />
+            <Menu size={16} />
           </button>
-          <div className="persona-badge">
-            <div
-              className="persona-avatar"
-              style={{ background: activePersona.gradient }}
-            >
-              {(() => {
-                const Icon = ICON_MAP[activePersona.icon] || ICON_MAP.Sparkles;
-                return <Icon size={14} />;
-              })()}
-            </div>
-            <div className="persona-info">
-              <span className="persona-name">{activePersona.name}</span>
-              <span className="persona-status">
-                <span className="status-dot" />
-                {activePersona.role}
-              </span>
-            </div>
+          <div style={{ display: 'flex', flexDirection: 'column', minWidth: 0 }}>
+            <span className="persona-name" style={{ fontSize: '0.85rem', fontWeight: 600 }}>
+              {conversation ? conversation.title : 'New Chat'}
+            </span>
+            <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>
+              Using {activePersona.name} • {activePersona.role}
+            </span>
           </div>
         </div>
 
-        {/* Header actions */}
-        <div className="header-actions" style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
-          <button 
-            className="header-new-chat-btn" 
-            onClick={onNewChat} 
-            title="Start a new chat"
-          >
-            <Plus size={15} />
+        {/* Header Actions */}
+        <div className="header-actions">
+          <button className="header-new-chat-btn" onClick={onNewChat} title="Start new conversation">
+            <Plus size={14} />
             <span className="btn-text">New Chat</span>
           </button>
 
           <button
             onClick={() => setSimulateError(!simulateError)}
             className={`simulate-error-toggle ${simulateError ? 'active' : ''}`}
-            title="Simulate connection error to test retry feature"
+            title="Simulate connection error"
           >
             <WifiOff size={13} />
             <span className="btn-text">Simulate Error</span>
@@ -121,95 +109,69 @@ export default function ChatArea({
 
           <span style={{ width: '1px', height: '16px', background: 'var(--border-subtle)' }} />
 
-          {/* Collaborative Agent Mode Selector */}
-          <div className="agent-mode-selector" style={{ display: 'flex', gap: '2px', background: 'var(--bg-primary)', padding: '2px', borderRadius: '6px', border: '1px solid var(--border-subtle)' }}>
-            {['single', 'collaborative', 'consensus'].map(m => (
-              <button
-                key={m}
-                onClick={() => setAgentMode(m)}
-                style={{
-                  padding: '4px 8px',
-                  borderRadius: '4px',
-                  background: agentMode === m ? 'var(--bg-tertiary)' : 'transparent',
-                  color: agentMode === m ? 'var(--text-primary)' : 'var(--text-secondary)',
-                  border: 'none',
-                  fontSize: '0.7rem',
-                  fontWeight: 500,
-                  cursor: 'pointer',
-                  textTransform: 'capitalize'
-                }}
-              >
-                {m}
-              </button>
-            ))}
-          </div>
-
-          <span style={{ width: '1px', height: '16px', background: 'var(--border-subtle)' }} />
-
-          <div className="agent-switcher" style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
-            <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginRight: '4px', fontWeight: 500 }} className="agent-label">Agent:</span>
-            {dynamicModels.map(p => {
-              const Icon = ICON_MAP[p.icon] || ICON_MAP.Sparkles;
-              const isCurrent = p.id === personaId;
-              return (
-                <button
-                  key={p.id}
-                  onClick={() => setPersonaId(p.id)}
-                  title={`Switch to ${p.name}`}
-                  disabled={agentMode !== 'single'}
-                  style={{
-                    width: '26px',
-                    height: '26px',
-                    borderRadius: '50%',
-                    background: p.gradient,
-                    border: isCurrent ? '1.5px solid var(--text-primary)' : '1px solid var(--border-subtle)',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    color: 'white',
-                    cursor: agentMode === 'single' ? 'pointer' : 'not-allowed',
-                    opacity: agentMode === 'single' ? 1 : 0.4,
-                    transition: 'all 0.2s',
-                    transform: isCurrent ? 'scale(1.08)' : 'scale(1)',
-                    boxShadow: isCurrent ? '0 0 8px rgba(255, 255, 255, 0.15)' : 'none'
-                  }}
-                >
-                  <Icon size={11} />
-                </button>
-              );
-            })}
-          </div>
+          {/* Share & More actions */}
+          <button className="composer-btn" title="Share Conversation" style={{ padding: '6px' }}>
+            <Share2 size={14} />
+          </button>
+          <button className="composer-btn" title="More Actions" style={{ padding: '6px' }}>
+            <MoreHorizontal size={14} />
+          </button>
         </div>
       </header>
 
-      {/* Main Conversation viewport */}
+      {/* Main Viewport */}
       <div className="messages-wrapper">
         {messages.length === 0 ? (
-          <div className="welcome-screen" style={{ paddingBottom: '40px' }}>
-            <MessageSquare size={44} className="welcome-icon" style={{ color: 'var(--text-secondary)' }} />
-            <h1>Start a new workspace chat</h1>
-            <p>Select your specialized companion to begin. Ask questions, generate code, write narratives, or seek structured mentorship.</p>
-            
+          <div className="welcome-screen">
+            {/* Elegant CSS/SVG welcome illustration */}
+            <div className="welcome-logo-container">
+              <svg width="64" height="64" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg" className="welcome-illustration">
+                <rect x="12" y="12" width="40" height="40" rx="10" fill="url(#grad)" stroke="rgba(255,255,255,0.08)" strokeWidth="1.5" />
+                <path d="M26 26L38 38M38 26L26 38" stroke="#ffffff" strokeWidth="2.5" strokeLinecap="round" />
+                <circle cx="32" cy="32" r="16" stroke="rgba(255,255,255,0.15)" strokeWidth="1" strokeDasharray="3 3" />
+                <defs>
+                  <linearGradient id="grad" x1="12" y1="12" x2="52" y2="52" gradientUnits="userSpaceOnUse">
+                    <stop stopColor="#18181b" />
+                    <stop offset="1" stopColor="#09090b" />
+                  </linearGradient>
+                </defs>
+              </svg>
+            </div>
+
+            <h1>How can ChatX assist you today?</h1>
+            <p style={{ fontSize: '0.88rem', color: 'var(--text-secondary)', maxWidth: '420px', margin: '8px auto 28px auto' }}>
+              Select a specialized assistant below to start coding, researching, or structuring your project workflow.
+            </p>
+
             <PersonaSelector
               selectedId={personaId}
               onSelect={setPersonaId}
             />
 
-            {/* Quick Actions Suggestions */}
+            {/* Quick Suggestions grid */}
             <div className="quick-suggestions-workspace" style={{ width: '100%', marginTop: '36px', textAlign: 'left' }}>
-              <h2 style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '16px' }}>Suggested Tasks</h2>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '16px' }} className="persona-selector-grid">
+              <h2 style={{ fontSize: '0.72rem', fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '16px' }}>
+                Suggested templates
+              </h2>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '14px' }}>
                 {QUICK_ACTIONS.map((group, groupIdx) => {
                   const GroupIcon = group.icon;
                   return (
                     <div 
                       key={groupIdx} 
-                      className="glass-panel" 
-                      style={{ padding: '16px', borderRadius: '12px', display: 'flex', flexDirection: 'column', gap: '10px' }}
+                      style={{ 
+                        background: 'var(--bg-secondary)', 
+                        border: '1px solid var(--border-subtle)', 
+                        borderRadius: '10px', 
+                        padding: '16px',
+                        display: 'flex', 
+                        flexDirection: 'column', 
+                        gap: '10px' 
+                      }}
                     >
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-primary)' }}>
-                        <span style={{ display: 'inline-flex', padding: '4px', borderRadius: '6px', background: 'rgba(255, 255, 255, 0.03)', border: '1px solid var(--border-subtle)', color: group.color }}>
-                          <GroupIcon size={13} />
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.8rem', fontWeight: 600, color: 'var(--text-primary)' }}>
+                        <span style={{ display: 'inline-flex', padding: '4px', borderRadius: '6px', background: 'rgba(255, 255, 255, 0.03)', color: group.color }}>
+                          <GroupIcon size={12} />
                         </span>
                         {group.category}
                       </div>
@@ -242,7 +204,7 @@ export default function ChatArea({
                             }}
                           >
                             <span>{p.label}</span>
-                            <ArrowRight size={10} />
+                            <ArrowRight size={10} style={{ opacity: 0.6 }} />
                           </button>
                         ))}
                       </div>
@@ -264,29 +226,21 @@ export default function ChatArea({
               />
             ))}
             
-            {/* Simulated typing indicator */}
             {isTyping && !messages.some(m => m.sender === 'assistant' && !m.text && !m.error) && (
               <div className="message-bubble-container assistant">
                 <div
                   className="message-avatar"
                   style={{ 
-                    background: activePersona.gradient,
-                    width: '32px',
-                    height: '32px',
-                    borderRadius: '50%',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    color: 'white'
+                    background: activePersona.gradient
                   }}
                 >
                   {(() => {
                     const Icon = ICON_MAP[activePersona.icon] || Sparkles;
-                    return <Icon size={14} />;
+                    return <Icon size={13} />;
                   })()}
                 </div>
-                <div className="message-bubble" style={{ display: 'flex', justifyContent: 'center', minHeight: '44px' }}>
-                  <div className="typing-indicator" style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                <div className="message-bubble" style={{ display: 'flex', justifyContent: 'center', minHeight: '36px' }}>
+                  <div className="typing-indicator">
                     <div className="typing-dot" />
                     <div className="typing-dot" />
                     <div className="typing-dot" />
@@ -299,7 +253,7 @@ export default function ChatArea({
         )}
       </div>
 
-      {/* Input Area */}
+      {/* Composer Input Area */}
       <ChatInput
         input={input}
         setInput={setInput}
