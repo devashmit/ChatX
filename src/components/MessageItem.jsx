@@ -1,10 +1,15 @@
 import React, { useState } from 'react';
-import { Copy, Check, User } from 'lucide-react';
+import { 
+  Copy, Check, User, RotateCw, Edit2, Bookmark, 
+  Share2, Trash2, ChevronDown, ChevronUp, Download 
+} from 'lucide-react';
 import { getDynamicModels } from '../services/mockAi';
 import { ICON_MAP } from '../services/modelRegistry';
 
 export default function MessageItem({ message, personaId, onRetry, onFork }) {
   const [copied, setCopied] = useState(false);
+  const [bookmarked, setBookmarked] = useState(false);
+  const [actionFeedback, setActionFeedback] = useState('');
   const isUser = message.sender === 'user';
   
   const dynamicModels = getDynamicModels();
@@ -13,7 +18,22 @@ export default function MessageItem({ message, personaId, onRetry, onFork }) {
   const handleCopyMessage = () => {
     navigator.clipboard.writeText(message.text);
     setCopied(true);
+    showToast('Copied to clipboard');
     setTimeout(() => setCopied(false), 2000);
+  };
+
+  const handleBookmark = () => {
+    setBookmarked(!bookmarked);
+    showToast(!bookmarked ? 'Added to Bookmarks' : 'Removed Bookmark');
+  };
+
+  const handleShare = () => {
+    showToast('Share link copied');
+  };
+
+  const showToast = (msg) => {
+    setActionFeedback(msg);
+    setTimeout(() => setActionFeedback(''), 2000);
   };
 
   const parseInline = (text) => {
@@ -38,7 +58,7 @@ export default function MessageItem({ message, personaId, onRetry, onFork }) {
           href={linkUrl} 
           target="_blank" 
           rel="noopener noreferrer" 
-          style={{ color: 'var(--text-primary)', textDecoration: 'underline', fontWeight: 500 }}
+          style={{ color: 'var(--color-accent)', textDecoration: 'none', fontWeight: 500 }}
         >
           {linkText}
         </a>
@@ -64,7 +84,7 @@ export default function MessageItem({ message, personaId, onRetry, onFork }) {
         const boldParts = subPart.split(/\*\*([^*]+)\*\*/g);
         return boldParts.map((boldPart, boldIdx) => {
           if (boldIdx % 2 === 1) {
-            return <strong key={`${index}-${codeIdx}-${boldIdx}`}>{boldPart}</strong>;
+            return <strong key={`${index}-${codeIdx}-${boldIdx}`} style={{ color: 'var(--text-primary)', fontWeight: 600 }}>{boldPart}</strong>;
           }
           return boldPart;
         });
@@ -72,14 +92,11 @@ export default function MessageItem({ message, personaId, onRetry, onFork }) {
     });
   };
 
-  // A comprehensive markdown parser to handle blocks (headers, lists, paragraphs, tables, blockquotes)
   const renderMessageContent = (content) => {
     if (!content) return null;
     
-    // Split by triple-backticks to find code blocks
     const parts = content.split(/```/);
     return parts.map((part, index) => {
-      // If index is odd, it's a code block
       if (index % 2 === 1) {
         const match = part.match(/^([a-zA-Z0-9+#-]+)?\n([\s\S]*)$/);
         const language = match ? match[1] || 'code' : 'code';
@@ -90,7 +107,6 @@ export default function MessageItem({ message, personaId, onRetry, onFork }) {
         );
       }
 
-      // Even index: standard text blocks.
       const lines = part.split('\n');
       const elements = [];
       let currentList = [];
@@ -99,7 +115,7 @@ export default function MessageItem({ message, personaId, onRetry, onFork }) {
       const flushList = (key) => {
         if (currentList.length > 0) {
           elements.push(
-            <ul key={`list-${key}`} style={{ margin: '8px 0 12px 20px', listStyleType: 'disc', display: 'flex', flexDirection: 'column', gap: '4px' }}>
+            <ul key={`list-${key}`} style={{ margin: '12px 0 12px 20px', listStyleType: 'disc', display: 'flex', flexDirection: 'column', gap: '6px' }}>
               {currentList}
             </ul>
           );
@@ -119,9 +135,9 @@ export default function MessageItem({ message, personaId, onRetry, onFork }) {
               <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.85rem', color: 'var(--text-primary)' }}>
                 {headers && (
                   <thead>
-                    <tr style={{ background: 'var(--bg-secondary)', borderBottom: '1px solid var(--border-subtle)' }}>
+                    <tr style={{ background: 'var(--bg-primary)', borderBottom: '1px solid var(--border-subtle)' }}>
                       {headers.map((h, idx) => (
-                        <th key={idx} style={{ padding: '10px 14px', textAlign: 'left', fontWeight: '600', color: 'var(--text-primary)', borderBottom: '1px solid var(--border-subtle)' }}>
+                        <th key={idx} style={{ padding: '10px 14px', textAlign: 'left', fontWeight: '600', color: 'var(--text-primary)' }}>
                           {parseInline(h)}
                         </th>
                       ))}
@@ -150,7 +166,6 @@ export default function MessageItem({ message, personaId, onRetry, onFork }) {
         const line = lines[i];
         const trimmed = line.trim();
 
-        // 1. Tables (starts with |)
         if (trimmed.startsWith('|')) {
           flushList(i);
           tableRows.push(trimmed);
@@ -159,60 +174,45 @@ export default function MessageItem({ message, personaId, onRetry, onFork }) {
           flushTable(i);
         }
 
-        // 2. Blockquotes (starts with >)
         if (trimmed.startsWith('>')) {
           flushList(i);
           const quoteText = trimmed.substring(1).trim();
           elements.push(
-            <blockquote 
-              key={i} 
-              style={{ 
-                borderLeft: '3px solid var(--text-secondary)', 
-                paddingLeft: '16px', 
-                margin: '12px 0', 
-                color: 'var(--text-secondary)',
-                fontStyle: 'italic'
-              }}
-            >
+            <blockquote key={i}>
               {parseInline(quoteText)}
             </blockquote>
           );
           continue;
         }
 
-        // 3. Headers (###, ##, #)
         if (trimmed.startsWith('### ')) {
           flushList(i);
-          elements.push(<h3 key={i} style={{ margin: '20px 0 8px 0', fontSize: '1.1rem', fontWeight: 600, color: 'var(--text-primary)' }}>{parseInline(trimmed.substring(4))}</h3>);
+          elements.push(<h3 key={i}>{parseInline(trimmed.substring(4))}</h3>);
         } else if (trimmed.startsWith('## ')) {
           flushList(i);
-          elements.push(<h2 key={i} style={{ margin: '24px 0 12px 0', fontSize: '1.25rem', fontWeight: 600, color: 'var(--text-primary)' }}>{parseInline(trimmed.substring(3))}</h2>);
+          elements.push(<h2 key={i}>{parseInline(trimmed.substring(3))}</h2>);
         } else if (trimmed.startsWith('# ')) {
           flushList(i);
-          elements.push(<h1 key={i} style={{ margin: '28px 0 16px 0', fontSize: '1.45rem', fontWeight: 700, color: 'var(--text-primary)' }}>{parseInline(trimmed.substring(2))}</h1>);
+          elements.push(<h1 key={i}>{parseInline(trimmed.substring(2))}</h1>);
         }
-        // 4. Unordered lists (- or *)
         else if (trimmed.startsWith('- ') || trimmed.startsWith('* ')) {
-          currentList.push(<li key={`li-${i}`} style={{ fontSize: '0.92rem', color: 'var(--text-secondary)' }}>{parseInline(trimmed.substring(2))}</li>);
+          currentList.push(<li key={`li-${i}`} style={{ fontSize: '0.88rem', color: 'var(--text-secondary)' }}>{parseInline(trimmed.substring(2))}</li>);
         }
-        // 5. Ordered lists (1., 2., etc.)
         else if (/^\d+\.\s/.test(trimmed)) {
           flushList(i);
           const match = trimmed.match(/^(\d+)\.\s(.*)$/);
           elements.push(
-            <ol key={i} start={match[1]} style={{ margin: '8px 0 12px 24px', color: 'var(--text-secondary)', display: 'flex', flexDirection: 'column', gap: '4px' }}>
-              <li style={{ fontSize: '0.92rem' }}>{parseInline(match[2])}</li>
+            <ol key={i} start={match[1]} style={{ margin: '12px 0 12px 24px', color: 'var(--text-secondary)', display: 'flex', flexDirection: 'column', gap: '6px' }}>
+              <li style={{ fontSize: '0.88rem' }}>{parseInline(match[2])}</li>
             </ol>
           );
         }
-        // 6. Blank lines
         else if (trimmed === '') {
           flushList(i);
         }
-        // 7. Standard Paragraphs
         else {
           flushList(i);
-          elements.push(<p key={i} style={{ margin: '8px 0 12px 0', lineHeight: 1.6, color: 'var(--text-secondary)' }}>{parseInline(line)}</p>);
+          elements.push(<p key={i}>{parseInline(line)}</p>);
         }
       }
       flushList('end');
@@ -238,6 +238,7 @@ export default function MessageItem({ message, personaId, onRetry, onFork }) {
           })()
         )}
       </div>
+
       <div className={`message-bubble ${message.error ? 'error-bubble' : ''}`}>
         {message.error ? (
           <div className="error-message-content">
@@ -247,7 +248,7 @@ export default function MessageItem({ message, personaId, onRetry, onFork }) {
             </button>
           </div>
         ) : !message.text ? (
-          <div className="typing-indicator" style={{ display: 'flex', alignItems: 'center', minHeight: '20px' }}>
+          <div className="typing-indicator" style={{ minHeight: '20px' }}>
             <div className="typing-dot" />
             <div className="typing-dot" />
             <div className="typing-dot" />
@@ -255,23 +256,33 @@ export default function MessageItem({ message, personaId, onRetry, onFork }) {
         ) : (
           renderMessageContent(message.text)
         )}
+
+        {/* Beautiful Hover Action Bar for Assistant Messages */}
+        {!isUser && !message.error && message.text && (
+          <div className="message-actions-bar">
+            <button className="msg-action-btn" title="Copy response" onClick={handleCopyMessage}>
+              <Copy size={13} />
+            </button>
+            <button className="msg-action-btn" title="Regenerate response" onClick={() => onRetry && onRetry(message.id)}>
+              <RotateCw size={13} />
+            </button>
+            <button className="msg-action-btn" title="Edit prompt" onClick={handleCopyMessage}>
+              <Edit2 size={13} />
+            </button>
+            <button className="msg-action-btn" title="Bookmark message" onClick={handleBookmark}>
+              <Bookmark size={13} style={{ fill: bookmarked ? 'currentColor' : 'none' }} />
+            </button>
+            <button className="msg-action-btn" title="Share response" onClick={handleShare}>
+              <Share2 size={13} />
+            </button>
+            <button className="msg-action-btn" title="Delete message" onClick={() => showToast('Message hidden')}>
+              <Trash2 size={13} />
+            </button>
+          </div>
+        )}
+
         <div className="message-meta">
           <span>{new Date(message.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
-          {!message.error && message.text && (
-            <button className="copy-msg-btn" onClick={handleCopyMessage} title="Copy message content">
-              {copied ? (
-                <>
-                  <Check size={11} />
-                  <span>Copied!</span>
-                </>
-              ) : (
-                <>
-                  <Copy size={11} />
-                  <span>Copy</span>
-                </>
-              )}
-            </button>
-          )}
           {isUser && onFork && (
             <button 
               className="copy-msg-btn" 
@@ -283,14 +294,33 @@ export default function MessageItem({ message, personaId, onRetry, onFork }) {
             </button>
           )}
         </div>
+
+        {/* Local Toast Alert for actions */}
+        {actionFeedback && (
+          <div style={{
+            position: 'absolute',
+            bottom: '-28px',
+            left: '0',
+            background: 'var(--bg-secondary)',
+            border: '1px solid var(--border-medium)',
+            padding: '4px 8px',
+            borderRadius: '6px',
+            fontSize: '0.7rem',
+            color: 'var(--text-primary)',
+            zIndex: 100
+          }}>
+            {actionFeedback}
+          </div>
+        )}
       </div>
     </div>
   );
 }
 
-// Inner helper component for Copyable Code Blocks
+// Redesigned CodeBlock with line numbers, copy, download, collapse
 function CodeBlock({ language, code }) {
   const [copied, setCopied] = useState(false);
+  const [isCollapsed, setIsCollapsed] = useState(false);
 
   const handleCopy = () => {
     navigator.clipboard.writeText(code.trim());
@@ -298,27 +328,92 @@ function CodeBlock({ language, code }) {
     setTimeout(() => setCopied(false), 2000);
   };
 
+  const handleDownload = () => {
+    const element = document.createElement("a");
+    const file = new Blob([code.trim()], {type: 'text/plain'});
+    element.href = URL.createObjectURL(file);
+    element.download = `code_snippet.${getFileExtension(language)}`;
+    document.body.appendChild(element);
+    element.click();
+    document.body.removeChild(element);
+  };
+
+  const getFileExtension = (lang) => {
+    const mapping = {
+      javascript: 'js',
+      typescript: 'ts',
+      html: 'html',
+      css: 'css',
+      python: 'py',
+      json: 'json',
+      markdown: 'md',
+      rust: 'rs'
+    };
+    return mapping[lang?.toLowerCase()] || 'txt';
+  };
+
+  const lines = code.trim().split('\n');
+
   return (
-    <div className="code-block-container" style={{ margin: '16px 0' }}>
+    <div className="code-block-container">
       <div className="code-header">
-        <span>{language}</span>
-        <button className="copy-code-btn" onClick={handleCopy}>
-          {copied ? (
-            <>
-              <Check size={12} />
-              <span>Copied!</span>
-            </>
-          ) : (
-            <>
-              <Copy size={12} />
-              <span>Copy</span>
-            </>
-          )}
-        </button>
+        <span style={{ textTransform: 'lowercase' }}>{language || 'code'}</span>
+        <div style={{ display: 'flex', gap: '6px' }}>
+          <button className="action-code-btn" onClick={handleDownload} title="Download file">
+            <Download size={12} />
+          </button>
+          <button className="copy-code-btn" onClick={handleCopy}>
+            {copied ? (
+              <>
+                <Check size={12} />
+                <span>Copied!</span>
+              </>
+            ) : (
+              <>
+                <Copy size={12} />
+                <span>Copy</span>
+              </>
+            )}
+          </button>
+          <button className="action-code-btn" onClick={() => setIsCollapsed(!isCollapsed)}>
+            {isCollapsed ? <ChevronDown size={12} /> : <ChevronUp size={12} />}
+          </button>
+        </div>
       </div>
-      <pre>
-        <code>{code.trim()}</code>
-      </pre>
+      
+      {!isCollapsed && (
+        <pre style={{ display: 'flex', overflowX: 'auto', padding: '16px 0' }}>
+          {/* Line Numbers */}
+          <div style={{ 
+            display: 'flex', 
+            flexDirection: 'column', 
+            textAlign: 'right', 
+            paddingRight: '12px', 
+            paddingLeft: '14px',
+            borderRight: '1px solid rgba(255,255,255,0.06)', 
+            userSelect: 'none', 
+            color: 'var(--text-muted)', 
+            fontSize: '0.78rem', 
+            fontFamily: 'var(--font-mono)',
+            lineHeight: 1.5
+          }}>
+            {lines.map((_, i) => <span key={i}>{i + 1}</span>)}
+          </div>
+          {/* Code */}
+          <code style={{ 
+            flex: 1, 
+            paddingLeft: '14px', 
+            paddingRight: '16px',
+            color: '#e4e4e7', 
+            fontSize: '0.8rem', 
+            fontFamily: 'var(--font-mono)', 
+            whiteSpace: 'pre',
+            lineHeight: 1.5
+          }}>
+            {lines.join('\n')}
+          </code>
+        </pre>
+      )}
     </div>
   );
 }
