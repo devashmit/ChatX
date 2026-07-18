@@ -1,5 +1,5 @@
 import React, { useRef, useEffect } from 'react';
-import { Send, Sparkles } from 'lucide-react';
+import { Send, Sparkles, Paperclip, Sliders } from 'lucide-react';
 import { getDynamicModels } from '../services/mockAi';
 
 export default function ChatInput({
@@ -19,7 +19,7 @@ export default function ChatInput({
   useEffect(() => {
     if (textareaRef.current) {
       textareaRef.current.style.height = 'auto';
-      textareaRef.current.style.height = `${Math.min(textareaRef.current.scrollHeight, 150)}px`;
+      textareaRef.current.style.height = `${Math.min(textareaRef.current.scrollHeight, 160)}px`;
     }
   }, [input]);
 
@@ -51,15 +51,15 @@ export default function ChatInput({
               className="suggestion-chip"
               onClick={() => onSelectSuggestion(suggestion)}
             >
-              <Sparkles size={12} style={{ marginRight: '4px', verticalAlign: 'middle', color: 'var(--color-primary)' }} />
+              <Sparkles size={11} style={{ marginRight: '6px', verticalAlign: 'middle', opacity: 0.8 }} />
               {suggestion}
             </button>
           ))}
         </div>
       )}
 
-      {/* Main Input Form */}
-      <div className="input-container glass-panel">
+      {/* Main Composer Box */}
+      <div className="input-container">
         <textarea
           ref={textareaRef}
           rows={1}
@@ -70,15 +70,37 @@ export default function ChatInput({
           onKeyDown={handleKeyDown}
           disabled={disabled}
         />
-        <div className="input-actions">
-          <button
-            className="input-btn send"
-            onClick={handleSubmit}
-            disabled={!input.trim() || disabled}
-            title="Send message"
-          >
-            <Send size={18} />
-          </button>
+        
+        {/* Composer Toolbar */}
+        <div className="composer-toolbar">
+          <div className="composer-left">
+            <button className="composer-btn" title="Attach file" type="button">
+              <Paperclip size={14} />
+            </button>
+            <button className="composer-btn" title="Model settings" type="button">
+              <Sliders size={14} />
+            </button>
+            <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>
+              {persona.displayName || persona.name}
+            </span>
+          </div>
+
+          <div className="composer-right">
+            {input.length > 0 && (
+              <span className="char-counter">
+                {input.length} chars
+              </span>
+            )}
+            <button
+              className="input-btn send"
+              onClick={handleSubmit}
+              disabled={!input.trim() || disabled}
+              title="Send message"
+            >
+              <span>Ask</span>
+              <Send size={12} />
+            </button>
+          </div>
         </div>
       </div>
     </div>
